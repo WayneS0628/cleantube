@@ -14,6 +14,7 @@
   max-width: 640px;
   margin: 0 auto 2rem;
 }
+
 #search-input {
   flex: 1;
   background: #1a1a1a;
@@ -162,13 +163,132 @@
   cursor: pointer;
 }
 #load-more:hover { border-color: #555; color: #e0e0e0; }
+
+  #user-bar {
+  max-width: 640px;
+  margin: -1rem auto 2rem;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+#signed-out,
+#signed-in {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+#username-input {
+  background: #1a1a1a;
+  border: 0.5px solid #333;
+  border-radius: var(--border-radius-md);
+  color: #e0e0e0;
+  font-size: 14px;
+  padding: 8px 12px;
+  outline: none;
+}
+
+#signin-btn,
+#signout-btn,
+#history-btn,
+#clear-history-btn {
+  background: #1a1a1a;
+  border: 0.5px solid #333;
+  border-radius: var(--border-radius-md);
+  color: #aaa;
+  font-size: 13px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+#signin-btn:hover,
+#signout-btn:hover,
+#history-btn:hover,
+#clear-history-btn:hover {
+  border-color: #555;
+  color: #e0e0e0;
+}
+
+#welcome-text {
+  color: #aaa;
+  font-size: 13px;
+}
+
+#history-section {
+  max-width: 900px;
+  margin: 0 auto 2rem;
+}
+
+#history-section h2 {
+  font-size: 18px;
+  margin-bottom: 1rem;
+}
+
+#history-section h3 {
+  font-size: 14px;
+  color: #aaa;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.history-empty {
+  color: #555;
+  font-size: 13px;
+  padding: 1rem 0;
+}
+
+.history-search-item {
+  background: #1a1a1a;
+  border: 0.5px solid #2a2a2a;
+  border-radius: var(--border-radius-md);
+  color: #e0e0e0;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.history-search-item:hover {
+  border-color: #444;
+}
 </style>
 
 <div id="app">
   <div id="search-wrap">
     <input id="search-input" type="text" placeholder="Search YouTube..." autocomplete="off" />
     <button id="search-btn"><i class="ti ti-search" aria-hidden="true"></i> Search</button>
+  </div> 
+
+  <div id="user-bar">
+  <div id="signed-out">
+    <input id="username-input" type="text" placeholder="Enter a name..." autocomplete="off" />
+    <button id="signin-btn">Sign in locally</button>
   </div>
+
+  <div id="signed-in" style="display:none;">
+    <span id="welcome-text"></span>
+    <button id="history-btn">History</button>
+    <button id="clear-history-btn">Clear history</button>
+    <button id="signout-btn">Sign out</button>
+  </div>
+</div>
+
+<div id="history-section" style="display:none;">
+  <h2>Your History</h2>
+
+  <h3>Watch history</h3>
+  <div id="watch-history"></div>
+
+  <h3>Search history</h3>
+  <div id="search-history"></div>
+</div>
 
   <div id="player-section">
     <button id="back-btn"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back to results</button>
@@ -190,6 +310,7 @@
 
 <script>
 const API_KEY = 'AIzaSyAKQLUA2J7j1YOlmy93z-DIFOkJWPy_kBQ';
+
 let nextPageToken = '';
 let currentQuery = '';
 let currentVideoId = '';
@@ -206,14 +327,205 @@ const backBtn = document.getElementById('back-btn');
 const loadMoreBtn = document.getElementById('load-more');
 const openYtBtn = document.getElementById('open-yt-btn');
 
+const usernameInput = document.getElementById('username-input');
+const signinBtn = document.getElementById('signin-btn');
+const signoutBtn = document.getElementById('signout-btn');
+const historyBtn = document.getElementById('history-btn');
+const clearHistoryBtn = document.getElementById('clear-history-btn');
+const signedOutEl = document.getElementById('signed-out');
+const signedInEl = document.getElementById('signed-in');
+const welcomeText = document.getElementById('welcome-text');
+const historySection = document.getElementById('history-section');
+const watchHistoryEl = document.getElementById('watch-history');
+const searchHistoryEl = document.getElementById('search-history');
+
+const STORAGE_KEYS = {
+  user: 'cleanTubeUser',
+  watchHistory: 'cleanTubeWatchHistory',
+  searchHistory: 'cleanTubeSearchHistory'
+};
+
+function escapeHTML(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function getStoredJSON(key, fallback) {
+  try {
+    return JSON.parse(localStorage.getItem(key)) || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function setStoredJSON(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function getCurrentUser() {
+  return localStorage.getItem(STORAGE_KEYS.user);
+}
+
+function updateAuthUI() {
+  const user = getCurrentUser();
+
+  if (user) {
+    signedOutEl.style.display = 'none';
+    signedInEl.style.display = 'flex';
+    welcomeText.textContent = `Signed in as ${user}`;
+  } else {
+    signedOutEl.style.display = 'flex';
+    signedInEl.style.display = 'none';
+    historySection.style.display = 'none';
+  }
+}
+
+function signIn() {
+  const name = usernameInput.value.trim();
+  if (!name) return;
+
+  localStorage.setItem(STORAGE_KEYS.user, name);
+  usernameInput.value = '';
+  updateAuthUI();
+}
+
+function signOut() {
+  localStorage.removeItem(STORAGE_KEYS.user);
+  updateAuthUI();
+}
+
+function addSearchHistory(query) {
+  if (!getCurrentUser()) return;
+
+  const history = getStoredJSON(STORAGE_KEYS.searchHistory, []);
+  const cleaned = history.filter(item => item.query.toLowerCase() !== query.toLowerCase());
+
+  cleaned.unshift({
+    query,
+    searchedAt: new Date().toISOString()
+  });
+
+  setStoredJSON(STORAGE_KEYS.searchHistory, cleaned.slice(0, 50));
+}
+
+function addWatchHistory(video) {
+  if (!getCurrentUser()) return;
+
+  const history = getStoredJSON(STORAGE_KEYS.watchHistory, []);
+  const cleaned = history.filter(item => item.id !== video.id);
+
+  cleaned.unshift({
+    ...video,
+    watchedAt: new Date().toISOString()
+  });
+
+  setStoredJSON(STORAGE_KEYS.watchHistory, cleaned.slice(0, 100));
+}
+
+function renderHistory() {
+  const watchHistory = getStoredJSON(STORAGE_KEYS.watchHistory, []);
+  const searchHistory = getStoredJSON(STORAGE_KEYS.searchHistory, []);
+
+  if (!watchHistory.length) {
+    watchHistoryEl.innerHTML = `<div class="history-empty">No watched videos yet.</div>`;
+  } else {
+    watchHistoryEl.innerHTML = `<div class="history-grid"></div>`;
+    const grid = watchHistoryEl.querySelector('.history-grid');
+
+    watchHistory.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'result-card';
+
+      card.innerHTML = `
+        <img src="${escapeHTML(item.thumb)}" alt="" loading="lazy">
+        <div class="result-info">
+          <div class="result-title">${escapeHTML(item.title)}</div>
+          <div class="result-meta">${escapeHTML(item.channel || '')}</div>
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        historySection.style.display = 'none';
+        playVideo(item.id, item.title, item.thumb, item.channel);
+      });
+
+      grid.appendChild(card);
+    });
+  }
+
+  if (!searchHistory.length) {
+    searchHistoryEl.innerHTML = `<div class="history-empty">No searches yet.</div>`;
+  } else {
+    searchHistoryEl.innerHTML = '';
+    searchHistory.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'history-search-item';
+      div.textContent = item.query;
+
+      div.addEventListener('click', () => {
+        searchInput.value = item.query;
+        historySection.style.display = 'none';
+        currentQuery = item.query;
+        playerSection.style.display = 'none';
+        ytPlayer.src = '';
+        resultsEl.style.display = 'grid';
+        document.getElementById('load-more-wrap').style.display = 'block';
+        search(item.query);
+      });
+
+      searchHistoryEl.appendChild(div);
+    });
+  }
+}
+
+function toggleHistory() {
+  const showing = historySection.style.display === 'block';
+
+  if (showing) {
+    historySection.style.display = 'none';
+    resultsEl.style.display = 'grid';
+    return;
+  }
+
+  playerSection.style.display = 'none';
+  ytPlayer.src = '';
+  resultsEl.style.display = 'none';
+  document.getElementById('load-more-wrap').style.display = 'none';
+
+  renderHistory();
+  historySection.style.display = 'block';
+}
+
+function clearHistory() {
+  localStorage.removeItem(STORAGE_KEYS.watchHistory);
+  localStorage.removeItem(STORAGE_KEYS.searchHistory);
+  renderHistory();
+}
+
 async function search(query, pageToken = '') {
   statusEl.textContent = 'Searching...';
-  if (!pageToken) resultsEl.innerHTML = '';
+  historySection.style.display = 'none';
+
+  if (!pageToken) {
+    resultsEl.innerHTML = '';
+    addSearchHistory(query);
+  }
+
   const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=12&order=relevance&q=${encodeURIComponent(query)}${pageToken ? '&pageToken=' + pageToken : ''}&key=${API_KEY}`;
+
   try {
     const res = await fetch(url);
     const data = await res.json();
-    if (data.error) { statusEl.textContent = 'API error: ' + data.error.message; return; }
+
+    if (data.error) {
+      statusEl.textContent = 'API error: ' + data.error.message;
+      return;
+    }
+
     nextPageToken = data.nextPageToken || '';
     statusEl.textContent = '';
     renderResults(data.items || []);
@@ -229,16 +541,34 @@ function renderResults(items) {
     const title = item.snippet.title;
     const channel = item.snippet.channelTitle;
     const thumb = item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url;
+
     const card = document.createElement('div');
     card.className = 'result-card';
-    card.innerHTML = `<img src="${thumb}" alt="" loading="lazy"><div class="result-info"><div class="result-title">${title}</div><div class="result-meta">${channel}</div></div>`;
-    card.addEventListener('click', () => playVideo(id, title));
+
+    card.innerHTML = `
+      <img src="${escapeHTML(thumb)}" alt="" loading="lazy">
+      <div class="result-info">
+        <div class="result-title">${escapeHTML(title)}</div>
+        <div class="result-meta">${escapeHTML(channel)}</div>
+      </div>
+    `;
+
+    card.addEventListener('click', () => playVideo(id, title, thumb, channel));
     resultsEl.appendChild(card);
   });
 }
 
-function playVideo(id, title) {
+function playVideo(id, title, thumb = '', channel = '') {
   currentVideoId = id;
+
+  addWatchHistory({
+    id,
+    title,
+    thumb,
+    channel
+  });
+
+  historySection.style.display = 'none';
   playerError.style.display = 'none';
   ytPlayer.style.display = 'block';
   ytPlayer.src = `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1`;
@@ -259,13 +589,6 @@ function playVideo(id, title) {
       // cross-origin — can't inspect, assume fine
     }
   };
-
-  setTimeout(() => {
-    try {
-      const doc = ytPlayer.contentDocument || ytPlayer.contentWindow?.document;
-      if (doc && doc.title && doc.title !== '') showEmbedError();
-    } catch(e) {}
-  }, 3000);
 }
 
 function showEmbedError() {
@@ -289,10 +612,12 @@ backBtn.addEventListener('click', () => {
 searchBtn.addEventListener('click', () => {
   const q = searchInput.value.trim();
   if (!q) return;
+
   currentQuery = q;
   playerSection.style.display = 'none';
   ytPlayer.src = '';
   resultsEl.style.display = 'grid';
+  document.getElementById('load-more-wrap').style.display = 'block';
   search(q);
 });
 
@@ -300,5 +625,16 @@ searchInput.addEventListener('keydown', e => {
   if (e.key === 'Enter') searchBtn.click();
 });
 
+usernameInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') signIn();
+});
+
 loadMoreBtn.addEventListener('click', () => search(currentQuery, nextPageToken));
+signinBtn.addEventListener('click', signIn);
+signoutBtn.addEventListener('click', signOut);
+historyBtn.addEventListener('click', toggleHistory);
+clearHistoryBtn.addEventListener('click', clearHistory);
+
+updateAuthUI();
+</script>
 </script>
