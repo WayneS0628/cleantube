@@ -515,6 +515,42 @@
     font-size: 21px;
   }
 }
+
+  #playback-mode {
+  max-width: 900px;
+  margin: 0 auto 1rem;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  backdrop-filter: blur(14px);
+}
+
+.mode-btn {
+  background: rgba(255, 255, 255, 0.065);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.mode-btn:hover {
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.mode-btn.active {
+  background: #fff;
+  color: #111;
+  border-color: #fff;
+}
 </style>
 
 <div id="app">
@@ -539,6 +575,12 @@
     </button>
   </div>
 </header>
+
+  <div id="playback-mode">
+  <span>Playback:</span>
+  <button id="mode-youtube" class="mode-btn active">Open on YouTube</button>
+  <button id="mode-embed" class="mode-btn">Play here</button>
+</div>
 
   <div id="user-bar">
   <div id="signed-out">
@@ -592,6 +634,10 @@ let currentVideoId = '';
 const searchInput = document.getElementById('search-input');
 const searchBtn = document.getElementById('search-btn');
 const resultsEl = document.getElementById('results');
+const modeYoutubeBtn = document.getElementById('mode-youtube');
+const modeEmbedBtn = document.getElementById('mode-embed');
+
+let playbackMode = localStorage.getItem('focusTubePlaybackMode') || 'youtube';
 const statusEl = document.getElementById('status');
 const playerSection = document.getElementById('player-section');
 const ytPlayer = document.getElementById('yt-player');
@@ -612,6 +658,7 @@ const welcomeText = document.getElementById('welcome-text');
 const historySection = document.getElementById('history-section');
 const watchHistoryEl = document.getElementById('watch-history');
 const searchHistoryEl = document.getElementById('search-history');
+
 
 const STORAGE_KEYS = {
   user: 'cleanTubeUser',
@@ -816,6 +863,21 @@ function clearHistory() {
   renderHistory();
 }
 
+function updatePlaybackModeUI() {
+  modeYoutubeBtn.classList.toggle('active', playbackMode === 'youtube');
+  modeEmbedBtn.classList.toggle('active', playbackMode === 'embed');
+}
+
+function setPlaybackMode(mode) {
+  playbackMode = mode;
+  localStorage.setItem('focusTubePlaybackMode', mode);
+  updatePlaybackModeUI();
+}
+
+function openOnYouTube(id) {
+  window.open(`https://www.youtube.com/watch?v=${id}`, '_blank');
+}
+
 async function search(query, pageToken = '') {
   statusEl.textContent = 'Searching...';
   historySection.style.display = 'none';
@@ -877,6 +939,11 @@ function playVideo(id, title, thumb = '', channel = '') {
     thumb,
     channel
   });
+
+  if (playbackMode === 'youtube') {
+    openOnYouTube(id);
+    return;
+  }
 
   historySection.style.display = 'none';
   playerError.style.display = 'none';
@@ -948,6 +1015,10 @@ signoutBtn.addEventListener('click', signOut);
 historyBtn.addEventListener('click', toggleHistory);
 clearHistoryBtn.addEventListener('click', clearHistory);
 
+modeYoutubeBtn.addEventListener('click', () => setPlaybackMode('youtube'));
+modeEmbedBtn.addEventListener('click', () => setPlaybackMode('embed'));
+
+updatePlaybackModeUI();
 updateAuthUI();
 </script>
 </script>
