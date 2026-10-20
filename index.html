@@ -1,1385 +1,1644 @@
+<!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<title>CleanTube</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%235E5CE6'/%3E%3Cpath d='M26 21.5v21l17-10.5z' fill='white'/%3E%3C/svg%3E">
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-#app {
-  min-height: 100vh;
-  background: #0f0f0f;
-  color: #e0e0e0;
-  font-family: var(--font-sans);
-  padding: 2rem 1.5rem;
-}
-#search-wrap {
-  display: flex;
-  gap: 8px;
-  max-width: 640px;
-  margin: 0 auto 2rem;
+/* ===================== Tokens ===================== */
+:root {
+  --canvas: #F5F5F7;
+  --surface: #FFFFFF;
+  --surface-2: #FBFBFD;
+  --ink: #1D1D1F;
+  --ink-2: #6E6E73;
+  --ink-3: #A1A1A6;
+  --hair: rgba(0, 0, 0, 0.08);
+  --fill: rgba(118, 118, 128, 0.12);
+  --fill-2: rgba(118, 118, 128, 0.2);
+  --accent: #5E5CE6;
+  --accent-hover: #4F4DD9;
+  --accent-soft: rgba(94, 92, 230, 0.12);
+  --on-accent: #FFFFFF;
+  --danger: #E5342B;
+  --glass: rgba(251, 251, 253, 0.72);
+  --glass-strong: rgba(255, 255, 255, 0.86);
+  --float-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 18px 48px rgba(0, 0, 0, 0.14);
+  --scrim: rgba(0, 0, 0, 0.28);
+
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --font-round: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --page: 1120px;
+  color-scheme: light;
 }
 
-#search-input {
-  flex: 1;
-  background: #1a1a1a;
-  border: 0.5px solid #333;
-  border-radius: var(--border-radius-md);
-  color: #e0e0e0;
-  font-size: 15px;
-  padding: 10px 14px;
-  outline: none;
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --canvas: #000000;
+    --surface: #1C1C1E;
+    --surface-2: #141416;
+    --ink: #F5F5F7;
+    --ink-2: #98989D;
+    --ink-3: #636366;
+    --hair: rgba(255, 255, 255, 0.1);
+    --fill: rgba(118, 118, 128, 0.24);
+    --fill-2: rgba(118, 118, 128, 0.36);
+    --accent: #7D7AFF;
+    --accent-hover: #918EFF;
+    --accent-soft: rgba(125, 122, 255, 0.18);
+    --danger: #FF453A;
+    --glass: rgba(22, 22, 24, 0.72);
+    --glass-strong: rgba(30, 30, 32, 0.88);
+    --float-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 18px 48px rgba(0, 0, 0, 0.6);
+    --scrim: rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
 }
-#search-input:focus { border-color: #555; }
-#search-btn {
-  background: #1a1a1a;
-  border: 0.5px solid #333;
-  border-radius: var(--border-radius-md);
-  color: #e0e0e0;
-  padding: 10px 18px;
-  cursor: pointer;
-  font-size: 15px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-#search-btn:hover { background: #252525; border-color: #555; }
-#player-section {
-  display: none;
-  max-width: 900px;
-  margin: 0 auto 2rem;
-}
-#back-btn {
-  background: transparent;
-  border: 0.5px solid #333;
-  border-radius: var(--border-radius-md);
-  color: #aaa;
-  font-size: 13px;
-  padding: 6px 14px;
-  cursor: pointer;
-  margin-bottom: 1rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-#back-btn:hover { border-color: #555; color: #e0e0e0; }
-#player-container {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 16/9;
-  background: #000;
-  border-radius: var(--border-radius-lg);
-  overflow: hidden;
-}
-#yt-player {
-  width: 100%;
-  height: 100%;
-  border: none;
-  display: block;
-}
-#player-error {
-  display: none;
-  position: absolute;
-  inset: 0;
-  background: #111;
-  border-radius: var(--border-radius-lg);
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  text-align: center;
-  padding: 2rem;
-}
-#player-error p {
-  color: #888;
-  font-size: 14px;
-}
-#open-yt-btn {
-  background: #cc0000;
-  border: none;
-  border-radius: var(--border-radius-md);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 500;
-  padding: 10px 20px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-#open-yt-btn:hover { background: #aa0000; }
-#video-title {
-  font-size: 15px;
-  font-weight: 500;
-  color: #e0e0e0;
-  margin-top: 12px;
-  line-height: 1.4;
-}
-#results {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
-  max-width: 900px;
-  margin: 0 auto;
-}
-.result-card {
-  background: #1a1a1a;
-  border: 0.5px solid #2a2a2a;
-  border-radius: var(--border-radius-lg);
-  overflow: hidden;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-.result-card:hover { border-color: #444; }
-.result-card img {
-  width: 100%;
-  aspect-ratio: 16/9;
-  object-fit: cover;
-  display: block;
-}
-.result-info { padding: 10px 12px; }
-.result-title {
-  font-size: 13px;
-  font-weight: 500;
-  color: #e0e0e0;
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  margin-bottom: 4px;
-}
-.result-meta { font-size: 12px; color: #777; }
-#status {
-  text-align: center;
-  color: #555;
-  font-size: 14px;
-  padding: 3rem 0;
-}
-#load-more-wrap { text-align: center; margin-top: 1.5rem; }
-#load-more {
-  display: none;
-  background: #1a1a1a;
-  border: 0.5px solid #333;
-  border-radius: var(--border-radius-md);
-  color: #aaa;
-  font-size: 13px;
-  padding: 8px 24px;
-  cursor: pointer;
-}
-#load-more:hover { border-color: #555; color: #e0e0e0; }
-
-  #user-bar {
-  max-width: 640px;
-  margin: -1rem auto 2rem;
-  display: flex;
-  justify-content: center;
-  gap: 8px;
+:root[data-theme="dark"] {
+  --canvas: #000000;
+  --surface: #1C1C1E;
+  --surface-2: #141416;
+  --ink: #F5F5F7;
+  --ink-2: #98989D;
+  --ink-3: #636366;
+  --hair: rgba(255, 255, 255, 0.1);
+  --fill: rgba(118, 118, 128, 0.24);
+  --fill-2: rgba(118, 118, 128, 0.36);
+  --accent: #7D7AFF;
+  --accent-hover: #918EFF;
+  --accent-soft: rgba(125, 122, 255, 0.18);
+  --danger: #FF453A;
+  --glass: rgba(22, 22, 24, 0.72);
+  --glass-strong: rgba(30, 30, 32, 0.88);
+  --float-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 18px 48px rgba(0, 0, 0, 0.6);
+  --scrim: rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
 }
 
-#signed-out,
-#signed-in {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-#username-input {
-  background: #1a1a1a;
-  border: 0.5px solid #333;
-  border-radius: var(--border-radius-md);
-  color: #e0e0e0;
-  font-size: 14px;
-  padding: 8px 12px;
-  outline: none;
-}
-
-#signin-btn,
-#signout-btn,
-#history-btn,
-#clear-history-btn {
-  background: #1a1a1a;
-  border: 0.5px solid #333;
-  border-radius: var(--border-radius-md);
-  color: #aaa;
-  font-size: 13px;
-  padding: 8px 14px;
-  cursor: pointer;
-}
-
-#signin-btn:hover,
-#signout-btn:hover,
-#history-btn:hover,
-#clear-history-btn:hover {
-  border-color: #555;
-  color: #e0e0e0;
-}
-
-#welcome-text {
-  color: #aaa;
-  font-size: 13px;
-}
-
-#history-section {
-  max-width: 900px;
-  margin: 0 auto 2rem;
-}
-
-#history-section h2 {
-  font-size: 18px;
-  margin-bottom: 1rem;
-}
-
-#history-section h3 {
-  font-size: 14px;
-  color: #aaa;
-  margin: 1.5rem 0 0.75rem;
-}
-
-.history-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px;
-}
-
-.history-empty {
-  color: #555;
-  font-size: 13px;
-  padding: 1rem 0;
-}
-
-.history-search-item {
-  background: #1a1a1a;
-  border: 0.5px solid #2a2a2a;
-  border-radius: var(--border-radius-md);
-  color: #e0e0e0;
-  padding: 10px 12px;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.history-search-item:hover {
-  border-color: #444;
-}
-
-  :root {
-  --bg: #0b0b0d;
-  --panel: rgba(255, 255, 255, 0.055);
-  --panel-strong: rgba(255, 255, 255, 0.085);
-  --border: rgba(255, 255, 255, 0.09);
-  --text: #f2f2f3;
-  --muted: #9b9ba1;
-  --accent: #ff3b30;
-  --accent-soft: rgba(255, 59, 48, 0.14);
-  --shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
-}
-
-#app {
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(255, 59, 48, 0.16), transparent 32rem),
-    radial-gradient(circle at top right, rgba(255, 255, 255, 0.075), transparent 30rem),
-    var(--bg);
-  color: var(--text);
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
-  padding: 2rem 1.5rem 4rem;
-}
-
-#top-shell {
-  max-width: 900px;
-  margin: 0 auto 1.5rem;
-  padding: 1.25rem;
-  border: 1px solid var(--border);
-  border-radius: 28px;
-  background: linear-gradient(180deg, var(--panel-strong), var(--panel));
-  backdrop-filter: blur(18px);
-  box-shadow: var(--shadow);
-}
-
-#brand {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 1.25rem;
-}
-
-#brand-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 16px;
-  display: grid;
-  place-items: center;
-  background: var(--accent);
-  color: #fff;
-  font-size: 18px;
-  box-shadow: 0 12px 30px rgba(255, 59, 48, 0.28);
-}
-
-#brand h1 {
-  font-size: 24px;
-  line-height: 1;
-  letter-spacing: -0.04em;
-}
-
-#brand p {
-  color: var(--muted);
-  font-size: 13px;
-  margin-top: 5px;
-}
-
-#search-wrap {
-  display: flex;
-  gap: 10px;
-  max-width: none;
+/* ===================== Base ===================== */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
   margin: 0;
-}
-
-#search-input {
-  flex: 1;
-  height: 48px;
-  background: rgba(0, 0, 0, 0.32);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  color: var(--text);
+  min-height: 100vh;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font);
   font-size: 15px;
-  padding: 0 16px;
-  outline: none;
-}
-
-#search-input::placeholder {
-  color: #666;
-}
-
-#search-input:focus {
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(0, 0, 0, 0.44);
-}
-
-#search-btn {
-  height: 48px;
-  background: #fff;
-  border: none;
-  border-radius: 16px;
-  color: #111;
-  padding: 0 22px;
-  cursor: pointer;
-  font-size: 15px;
-  font-weight: 650;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-#search-btn:hover {
-  transform: translateY(-1px);
-  background: #f2f2f2;
-}
-
-#user-bar {
-  max-width: 900px;
-  margin: 0 auto 1.5rem;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.045);
-  backdrop-filter: blur(14px);
-}
-
-#signed-out,
-#signed-in {
-  justify-content: center;
-}
-
-#username-input {
-  height: 38px;
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  color: var(--text);
-  padding: 0 12px;
-}
-
-#signin-btn,
-#signout-btn,
-#history-btn,
-#clear-history-btn,
-#back-btn,
-#load-more {
-  background: rgba(255, 255, 255, 0.065);
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  color: var(--text);
-  transition: 0.15s ease;
-}
-
-#signin-btn:hover,
-#signout-btn:hover,
-#history-btn:hover,
-#clear-history-btn:hover,
-#back-btn:hover,
-#load-more:hover {
-  background: rgba(255, 255, 255, 0.11);
-  border-color: rgba(255, 255, 255, 0.18);
-  color: #fff;
-}
-
-#results {
-  max-width: 900px;
-  gap: 18px;
-}
-
-.result-card {
-  background: rgba(255, 255, 255, 0.055);
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  overflow: hidden;
-  transition: 0.16s ease;
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.20);
-}
-
-.result-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.075);
-}
-
-.result-card img {
-  aspect-ratio: 16/9;
-}
-
-.result-info {
-  padding: 12px 14px 14px;
-}
-
-.result-title {
-  font-size: 14px;
-  color: var(--text);
-}
-
-.result-meta {
-  color: var(--muted);
-  margin-top: 7px;
-}
-
-#player-section {
-  max-width: 960px;
-}
-
-#player-container {
-  border-radius: 28px;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-}
-
-#video-title {
-  font-size: 17px;
-  margin-top: 16px;
+  line-height: 1.47;
   letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
 }
-
-#history-section {
-  max-width: 900px;
-  padding: 1.25rem;
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.045);
-  backdrop-filter: blur(14px);
-}
-
-.history-search-item {
-  background: rgba(255, 255, 255, 0.055);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-}
-
-#status {
-  color: var(--muted);
-}
-
-@media (max-width: 640px) {
-  #app {
-    padding: 1rem;
-  }
-
-  #top-shell {
-    border-radius: 22px;
-    padding: 1rem;
-  }
-
-  #search-wrap {
-    flex-direction: column;
-  }
-
-  #search-btn {
-    justify-content: center;
-  }
-
-  #brand h1 {
-    font-size: 21px;
-  }
-}
-
-  #playback-mode {
-  max-width: 900px;
-  margin: 0 auto 1rem;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.045);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 13px;
-  backdrop-filter: blur(14px);
-}
-
-.mode-btn {
-  background: rgba(255, 255, 255, 0.065);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  color: var(--text);
-  padding: 7px 12px;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.mode-btn:hover {
-  background: rgba(255, 255, 255, 0.11);
-}
-
-.mode-btn.active {
-  background: #fff;
-  color: #111;
-  border-color: #fff;
-}
-
-/* ---------- Player toolbar, mini player, picture-in-picture ---------- */
+button, input, textarea, select { font: inherit; color: inherit; letter-spacing: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+img { display: block; max-width: 100%; }
 [hidden] { display: none !important; }
+:focus { outline: none; }
+:focus-visible { outline: 3px solid var(--accent-soft); outline-offset: 2px; box-shadow: 0 0 0 1.5px var(--accent); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.icon { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
-#player-toolbar {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
+/* ===================== Controls ===================== */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 34px; padding: 0 14px; border-radius: 999px;
+  background: var(--fill); color: var(--ink);
+  font-size: 14px; font-weight: 500; white-space: nowrap;
+  transition: background 0.2s var(--ease), transform 0.2s var(--ease);
 }
+.btn:hover { background: var(--fill-2); }
+.btn:active { transform: scale(0.97); }
+.btn.primary { background: var(--accent); color: var(--on-accent); }
+.btn.primary:hover { background: var(--accent-hover); }
+.btn.plain { background: transparent; color: var(--accent); padding: 0 8px; }
+.btn.plain:hover { background: var(--accent-soft); }
+.btn.danger { color: var(--danger); }
+.btn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
 
-#player-toolbar #back-btn { margin-bottom: 0; }
-
-.player-btn {
-  background: rgba(255, 255, 255, 0.065);
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  color: var(--text);
-  font-size: 13px;
-  padding: 6px 14px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: 0.15s ease;
+.icon-btn {
+  width: 34px; height: 34px; border-radius: 999px;
+  display: inline-grid; place-items: center; flex: none;
+  color: var(--ink-2);
+  transition: background 0.2s var(--ease), color 0.2s var(--ease);
 }
+.icon-btn:hover { background: var(--fill); color: var(--ink); }
+.icon-btn[aria-pressed="true"] { color: var(--accent); }
+.icon-btn[aria-pressed="true"] .icon { fill: currentColor; }
 
-.player-btn:hover {
-  background: rgba(255, 255, 255, 0.11);
-  border-color: rgba(255, 255, 255, 0.18);
-  color: #fff;
+.segmented {
+  display: inline-flex; padding: 2px; gap: 2px;
+  background: var(--fill); border-radius: 10px;
 }
-
-#close-player-btn { margin-left: auto; }
-
-#pip-placeholder {
-  display: none;
-  position: absolute;
-  inset: 0;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  background: #111;
-  color: var(--muted);
-  font-size: 14px;
-  text-align: center;
-  padding: 2rem;
-}
-
-#mini-bar { display: none; }
-
-#player-section.mini {
-  position: fixed;
-  right: 16px;
-  bottom: 16px;
-  width: min(380px, calc(100vw - 32px));
-  max-width: none;
-  margin: 0;
-  z-index: 1000;
-  background: #141416;
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  overflow: hidden;
-  box-shadow: var(--shadow);
-}
-
-#player-section.mini #player-toolbar,
-#player-section.mini #video-title { display: none; }
-
-#player-section.mini #player-container {
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-#player-section.mini #mini-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 10px;
-}
-
-#mini-title {
-  flex: 1;
-  min-width: 0;
-  font-size: 12px;
-  color: var(--text);
+.segmented button {
+  height: 28px; padding: 0 12px; border-radius: 8px;
+  font-size: 13px; font-weight: 500; color: var(--ink);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  transition: background 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+.segmented button[aria-checked="true"] {
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 0 0 0.5px var(--hair);
+}
+:root[data-theme="dark"] .segmented button[aria-checked="true"] { background: #636366; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .segmented button[aria-checked="true"] { background: #636366; }
 }
 
-.mini-btn {
-  flex: none;
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  background: rgba(255, 255, 255, 0.065);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text);
-  font-size: 14px;
-  cursor: pointer;
+.switch { position: relative; width: 51px; height: 31px; flex: none; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+.switch span {
+  position: absolute; inset: 0; border-radius: 999px; background: var(--fill-2);
+  transition: background 0.25s var(--ease);
+}
+.switch span::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px;
+  border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: transform 0.25s var(--ease);
+}
+.switch input:checked + span { background: #34C759; }
+.switch input:checked + span::after { transform: translateX(20px); }
+.switch input:focus-visible + span { box-shadow: 0 0 0 3px var(--accent-soft), 0 0 0 1.5px var(--accent); }
+
+/* ===================== Toolbar ===================== */
+.toolbar {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--glass);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid var(--hair);
+}
+.toolbar-inner {
+  max-width: var(--page); margin: 0 auto;
+  height: 56px; padding: 0 20px;
+  display: grid; grid-template-columns: 1fr minmax(0, 520px) 1fr; align-items: center; gap: 16px;
+}
+.brand {
+  grid-column: 1; justify-self: start;
+  color: var(--ink); text-decoration: none;
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: var(--font-display); font-weight: 600; font-size: 17px; letter-spacing: -0.02em;
+  padding: 4px 8px 4px 4px; border-radius: 10px;
+}
+.brand-mark {
+  width: 26px; height: 26px; border-radius: 7px; background: var(--accent);
+  display: grid; place-items: center; color: #fff;
+}
+.brand-mark svg { width: 12px; height: 12px; fill: currentColor; margin-left: 2px; }
+.toolbar-search { position: relative; grid-column: 2; }
+.toolbar-search .icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--ink-2); width: 16px; height: 16px; }
+.toolbar-search input {
+  width: 100%; height: 36px; padding: 0 12px 0 34px;
+  background: var(--fill); border: 0; border-radius: 10px;
+  font-size: 15px;
+}
+.toolbar-search input::placeholder { color: var(--ink-2); }
+.toolbar-search input:focus { background: var(--surface); box-shadow: 0 0 0 3.5px var(--accent-soft), 0 0 0 1px var(--accent); }
+.toolbar-actions { grid-column: 3; justify-self: end; display: flex; align-items: center; gap: 4px; }
+
+.focus-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 32px; padding: 0 12px 0 6px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent);
+  font-family: var(--font-round); font-size: 13px; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  max-width: 260px;
+}
+.focus-pill .ring { width: 22px; height: 22px; transform: rotate(-90deg); flex: none; }
+.focus-pill .ring circle { fill: none; stroke-width: 3; }
+.focus-pill .ring .track { stroke: var(--accent-soft); }
+.focus-pill .ring .bar { stroke: currentColor; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.focus-pill .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); font-weight: 500; }
+
+/* ===================== Views ===================== */
+main { max-width: var(--page); margin: 0 auto; padding: 0 20px 96px; }
+.view[hidden] { display: none; }
+
+/* ---------- Home ---------- */
+#home {
+  min-height: calc(100vh - 56px);
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 8vh 0 14vh;
+}
+.home-inner { width: min(680px, 100%); margin: 0 auto; }
+.home-title {
+  font-family: var(--font-display);
+  font-size: clamp(38px, 6.4vw, 64px);
+  font-weight: 700; line-height: 1.04; letter-spacing: -0.045em;
+  margin: 0 0 32px;
+  text-wrap: balance;
+}
+.home-title .soft { color: var(--ink-3); }
+.hero-field { position: relative; }
+.hero-field .icon { position: absolute; left: 22px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; color: var(--ink-2); }
+#hero-input {
+  width: 100%; height: 68px;
+  padding: 0 128px 0 58px;
+  background: var(--surface);
+  border: 0; border-radius: 22px;
+  font-size: 21px; letter-spacing: -0.02em;
+  box-shadow: 0 0 0 0.5px var(--hair), 0 8px 30px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.25s var(--ease);
+}
+#hero-input::placeholder { color: var(--ink-3); }
+#hero-input:focus { box-shadow: 0 0 0 4px var(--accent-soft), 0 0 0 1.5px var(--accent), 0 8px 30px rgba(0, 0, 0, 0.06); }
+.hero-field .btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); height: 44px; padding: 0 20px; font-size: 15px; border-radius: 14px; }
+.hero-field .btn:active { transform: translateY(-50%) scale(0.97); }
+
+.home-focus {
+  margin-top: 22px;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px;
+  color: var(--ink-2); font-size: 14px;
+}
+.home-recent { margin-top: 40px; }
+.home-recent h2 { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 0 0 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  height: 32px; padding: 0 14px; border-radius: 999px;
+  background: var(--surface); box-shadow: 0 0 0 0.5px var(--hair);
+  font-size: 14px; color: var(--ink);
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: background 0.2s var(--ease);
+}
+.chip:hover { background: var(--fill); }
+.home-hint { margin-top: 48px; font-size: 13px; color: var(--ink-3); }
+kbd {
+  font-family: var(--font); font-size: 12px;
+  display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px;
+  border-radius: 6px; background: var(--fill); color: var(--ink-2);
 }
 
-.mini-btn:hover { background: rgba(255, 255, 255, 0.14); }
+/* ---------- Results ---------- */
+.results-head {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  padding: 28px 0 18px;
+}
+.results-head h1 {
+  font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: -0.03em;
+  margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.filters { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+
+.result-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.result {
+  position: relative;
+  display: grid; grid-template-columns: 1fr auto; align-items: start; gap: 8px;
+  padding: 14px 10px; margin: 0 -10px;
+  border-radius: 18px;
+  transition: background 0.2s var(--ease);
+}
+.result + .result::before {
+  content: ""; position: absolute; top: 0; left: 10px; right: 10px;
+  height: 0.5px; background: var(--hair); transition: opacity 0.2s var(--ease);
+}
+.result:hover::before, .result:hover + .result::before { opacity: 0; }
+@media (hover: hover) { .result:hover { background: var(--surface); } }
+.result-main {
+  display: grid; grid-template-columns: 248px 1fr; gap: 18px; align-items: start;
+  text-align: left; min-width: 0; border-radius: 12px;
+}
+.thumb {
+  position: relative; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden;
+  background: var(--fill);
+}
+.thumb img { width: 100%; height: 100%; object-fit: cover; }
+.duration {
+  position: absolute; right: 6px; bottom: 6px;
+  padding: 1px 6px; border-radius: 6px;
+  background: rgba(0, 0, 0, 0.66); color: #fff;
+  font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.result-text { min-width: 0; padding-top: 2px; }
+.result-title {
+  font-size: 17px; font-weight: 600; line-height: 1.3; letter-spacing: -0.02em;
+  margin: 0 0 6px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--ink-2); }
+.meta .inline-duration { display: none; font-variant-numeric: tabular-nums; }
+.result-desc {
+  margin: 8px 0 0; font-size: 13px; color: var(--ink-2);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  max-width: 64ch;
+}
+body.text-only .result-main { grid-template-columns: 1fr; }
+body.text-only .thumb { display: none; }
+body.text-only .meta .inline-duration { display: inline; }
+body.text-only .result { padding: 12px 10px; }
+
+.list-footer { display: flex; justify-content: center; padding: 28px 0 0; }
+.status { padding: 56px 0; text-align: center; color: var(--ink-2); }
+.status strong { display: block; color: var(--ink); font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+
+.skeleton .thumb, .skeleton .bar {
+  background: linear-gradient(90deg, var(--fill) 0%, var(--fill-2) 50%, var(--fill) 100%);
+  background-size: 200% 100%; animation: shimmer 1.4s linear infinite;
+}
+.skeleton .bar { height: 14px; border-radius: 6px; margin-bottom: 10px; }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* ---------- Watch ---------- */
+.watch-top { display: flex; align-items: center; justify-content: space-between; padding: 18px 0 14px; gap: 12px; }
+.watch-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 28px; align-items: start; }
+.player-card { position: relative; }
+.player-frame {
+  position: relative; aspect-ratio: 16 / 9; background: #000;
+  border-radius: 20px; overflow: hidden;
+}
+.player-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+.player-overlay {
+  position: absolute; inset: 0; display: none;
+  flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  text-align: center; padding: 24px; color: #A1A1A6; background: #0A0A0A;
+}
+.player-overlay p { margin: 0; max-width: 34ch; }
+.player-overlay .btn { background: rgba(255, 255, 255, 0.14); color: #fff; }
+.player-overlay .btn:hover { background: rgba(255, 255, 255, 0.22); }
+
+.mini-bar { display: none; }
+
+.watch-meta { padding: 18px 2px 0; }
+.watch-title {
+  font-family: var(--font-display); font-size: 24px; font-weight: 700; line-height: 1.2;
+  letter-spacing: -0.03em; margin: 0 0 6px; text-wrap: balance;
+}
+.watch-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+.speed { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); }
+
+.notes {
+  background: var(--surface); border-radius: 20px;
+  box-shadow: 0 0 0 0.5px var(--hair);
+  display: flex; flex-direction: column;
+  max-height: calc(100vh - 140px); position: sticky; top: 76px;
+}
+.notes-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 14px 6px 18px; }
+.notes-head h2 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+.note-list { list-style: none; margin: 0; padding: 4px 8px; overflow-y: auto; flex: 1; min-height: 60px; }
+.note {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: start;
+  padding: 8px 10px; border-radius: 12px;
+}
+.note:hover { background: var(--fill); }
+.note-time {
+  font-family: var(--font-round); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+  color: var(--accent); background: var(--accent-soft);
+  padding: 2px 8px; border-radius: 999px; margin-top: 1px;
+}
+.note-text { font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+.note .icon-btn { width: 26px; height: 26px; opacity: 0; }
+.note:hover .icon-btn, .note .icon-btn:focus-visible { opacity: 1; }
+.notes-empty { padding: 10px 18px 16px; color: var(--ink-2); font-size: 14px; }
+.composer { padding: 10px; border-top: 0.5px solid var(--hair); }
+.composer textarea {
+  width: 100%; min-height: 76px; resize: vertical;
+  background: var(--fill); border: 0; border-radius: 14px; padding: 10px 12px;
+  font-size: 14px; line-height: 1.45;
+}
+.composer textarea::placeholder { color: var(--ink-2); }
+.composer textarea:focus { background: var(--surface); box-shadow: 0 0 0 3px var(--accent-soft), 0 0 0 1px var(--accent); }
+.composer-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; }
+.composer-row small { color: var(--ink-3); font-size: 12px; }
+
+/* Docked mini player: the watch view stays mounted so the video never reloads. */
+#watch.docked { display: block !important; }
+#watch.docked .watch-top,
+#watch.docked .watch-meta,
+#watch.docked .notes { display: none; }
+#watch.docked .watch-grid { display: block; }
+#watch.docked .player-card {
+  position: fixed; right: 20px; bottom: 20px; z-index: 60;
+  width: min(380px, calc(100vw - 32px));
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  backdrop-filter: saturate(180%) blur(24px);
+  border-radius: 20px; overflow: hidden;
+  box-shadow: var(--float-shadow), 0 0 0 0.5px var(--hair);
+  animation: dock 0.35s var(--ease);
+}
+#watch.docked .player-frame { border-radius: 0; }
+#watch.docked .mini-bar { display: flex; align-items: center; gap: 2px; padding: 8px 8px 8px 14px; }
+#watch.docked.hidden-dock { display: none !important; }
+.mini-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@keyframes dock { from { transform: translateY(16px) scale(0.96); opacity: 0; } }
+
+/* ===================== Sheets (dialogs) ===================== */
+dialog {
+  border: 0; padding: 0; color: var(--ink);
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: saturate(180%) blur(30px);
+  backdrop-filter: saturate(180%) blur(30px);
+  box-shadow: var(--float-shadow), 0 0 0 0.5px var(--hair);
+}
+dialog::backdrop { background: var(--scrim); }
+dialog[open] { animation: rise 0.4s var(--ease); }
+@keyframes rise { from { transform: translateY(24px); opacity: 0; } }
+
+.side-sheet {
+  margin: 12px 12px 12px auto; height: calc(100vh - 24px); max-height: none;
+  width: min(440px, calc(100vw - 24px));
+  border-radius: 24px;
+}
+.side-sheet[open] { display: flex; flex-direction: column; animation: slide 0.4s var(--ease); }
+@keyframes slide { from { transform: translateX(32px); opacity: 0; } }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 16px 8px 22px; }
+.sheet-head h2 { margin: 0; font-family: var(--font-display); font-size: 24px; font-weight: 700; letter-spacing: -0.03em; }
+.sheet-body { padding: 8px 22px 24px; overflow-y: auto; flex: 1; }
+
+.stats { display: flex; gap: 12px; margin: 4px 0 18px; }
+.stat {
+  flex: 1; background: var(--fill); border-radius: 16px; padding: 12px 14px;
+}
+.stat b { display: block; font-family: var(--font-round); font-size: 22px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 13px; color: var(--ink-2); }
+
+.lib-list { list-style: none; margin: 14px 0 0; padding: 0; }
+.lib-item { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 8px; margin: 0 -8px; border-radius: 14px; }
+.lib-item:hover { background: var(--fill); }
+.lib-item .thumb { border-radius: 8px; }
+.lib-open { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: center; text-align: left; min-width: 0; border-radius: 10px; }
+.lib-text { min-width: 0; }
+.lib-title { font-size: 14px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.lib-sub { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+.lib-empty { padding: 32px 4px; color: var(--ink-2); text-align: center; }
+.lib-empty strong { display: block; color: var(--ink); margin-bottom: 4px; }
+.lib-foot { margin-top: 14px; display: flex; justify-content: flex-end; }
+
+.group { background: var(--surface); border-radius: 16px; box-shadow: 0 0 0 0.5px var(--hair); margin: 0 0 22px; }
+.group-title { font-size: 13px; color: var(--ink-2); margin: 0 0 8px 14px; font-weight: 500; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 14px; min-height: 52px; }
+.row + .row { border-top: 0.5px solid var(--hair); }
+.row-label { font-size: 15px; }
+.row-label small { display: block; font-size: 13px; color: var(--ink-2); margin-top: 1px; }
+.shortcut-row { display: flex; justify-content: space-between; padding: 10px 14px; font-size: 14px; }
+.shortcut-row + .shortcut-row { border-top: 0.5px solid var(--hair); }
+
+.alert {
+  width: min(360px, calc(100vw - 32px)); border-radius: 24px; padding: 26px 22px 18px; text-align: center;
+}
+.alert h2 { margin: 0 0 6px; font-family: var(--font-display); font-size: 21px; font-weight: 700; letter-spacing: -0.02em; }
+.alert p { margin: 0 0 20px; color: var(--ink-2); }
+.alert .stack { display: grid; gap: 8px; }
+.alert .stack .btn { height: 44px; border-radius: 14px; font-size: 15px; }
+.done-ring { width: 64px; height: 64px; margin: 0 auto 14px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
+.done-ring .icon { width: 30px; height: 30px; stroke-width: 2.4; }
+
+/* ===================== Toast ===================== */
+.toast {
+  position: fixed; left: 50%; bottom: 28px; z-index: 100;
+  transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  padding: 10px 18px; border-radius: 999px;
+  background: var(--glass-strong); color: var(--ink);
+  -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: var(--float-shadow), 0 0 0 0.5px var(--hair);
+  font-size: 14px; font-weight: 500;
+  transition: transform 0.35s var(--ease), opacity 0.35s var(--ease);
+}
+.toast.show { transform: translate(-50%, 0); opacity: 1; }
+
+/* ===================== Responsive ===================== */
+@media (max-width: 960px) {
+  .watch-grid { grid-template-columns: 1fr; }
+  .notes { position: static; max-height: none; }
+}
+@media (max-width: 720px) {
+  .toolbar-inner { grid-template-columns: auto 1fr auto; padding: 0 12px; gap: 8px; }
+  .brand-name { display: none; }
+  .focus-pill .label { display: none; }
+  main { padding: 0 16px 96px; }
+  .result-main { grid-template-columns: 136px 1fr; gap: 12px; }
+  .result-title { font-size: 15px; }
+  .result-desc { display: none; }
+  #hero-input { height: 60px; font-size: 18px; padding: 0 16px 0 50px; border-radius: 18px; }
+  .hero-field .icon { left: 18px; }
+  .hero-field .btn { display: none; }
+  .watch-title { font-size: 20px; }
+  #watch.docked .player-card { right: 16px; bottom: 16px; }
+}
+@media (max-width: 720px) {
+  .results-head { padding: 20px 0 14px; }
+  .filters { width: calc(100% + 32px); margin: 0 -16px; padding: 0 16px; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+  .filters::-webkit-scrollbar { display: none; }
+  .filters .segmented { flex: none; }
+  .toast { white-space: nowrap; max-width: calc(100vw - 32px); overflow: hidden; text-overflow: ellipsis; }
+}
+@media (max-width: 420px) {
+  .result-main { grid-template-columns: 120px 1fr; }
+  .results-head h1 { font-size: 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
 </style>
+</head>
+<body>
 
-<div id="app">
-  <header id="top-shell">
-  <div id="brand">
-    <div id="brand-icon">▶</div>
-    <div>
-      <h1>CleanTube</h1>
-      <p>YouTube without the noise</p>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-books" viewBox="0 0 24 24"><path d="M3.5 4.5h4v15h-4zM9.5 4.5h4v15h-4zM15.2 5.6l3.6-1 3.4 14-3.6 1z"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6.5 3.5h11v17l-5.5-4-5.5 4z"/></symbol>
+  <symbol id="i-pip" viewBox="0 0 24 24"><rect x="2.5" y="4.5" width="19" height="15" rx="3"/><rect x="12" y="11.5" width="7" height="5" rx="1.2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></symbol>
+</svg>
+
+<header class="toolbar">
+  <div class="toolbar-inner">
+    <a class="brand" href="#/" aria-label="CleanTube home">
+      <span class="brand-mark"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg></span>
+      <span class="brand-name">CleanTube</span>
+    </a>
+
+    <form id="toolbar-form" class="toolbar-search" role="search" hidden>
+      <svg class="icon"><use href="#i-search"/></svg>
+      <label for="toolbar-input" class="sr-only">Search YouTube</label>
+      <input id="toolbar-input" type="search" placeholder="Search or paste a link" autocomplete="off" enterkeyhint="search">
+    </form>
+
+    <div class="toolbar-actions">
+      <button id="focus-pill" class="focus-pill" hidden aria-label="Focus session">
+        <svg class="ring" viewBox="0 0 24 24"><circle class="track" cx="12" cy="12" r="9"/><circle class="bar" id="focus-ring" cx="12" cy="12" r="9" stroke-dasharray="56.55" stroke-dashoffset="0"/></svg>
+        <span id="focus-time">25:00</span>
+        <span id="focus-label" class="label"></span>
+      </button>
+      <button id="library-btn" class="icon-btn" aria-label="Library" title="Library (L)"><svg class="icon"><use href="#i-books"/></svg></button>
+      <button id="settings-btn" class="icon-btn" aria-label="Settings" title="Settings"><svg class="icon"><use href="#i-gear"/></svg></button>
     </div>
-  </div>
-
-  <div id="search-wrap">
-    <input 
-      id="search-input" 
-      type="text" 
-      placeholder="Search YouTube or paste a video link..." 
-      autocomplete="off" 
-    />
-    <button id="search-btn">
-      <i class="ti ti-search" aria-hidden="true"></i> Go
-    </button>
   </div>
 </header>
 
-  <div id="playback-mode">
-  <span>Playback:</span>
-  <button id="mode-youtube" class="mode-btn active">Open on YouTube</button>
-  <button id="mode-embed" class="mode-btn">Play here</button>
-</div>
+<main>
+  <!-- Home -->
+  <section id="home" class="view" aria-labelledby="home-title">
+    <div class="home-inner">
+      <h1 id="home-title" class="home-title">What do you want to learn<span class="soft">?</span></h1>
+      <form id="hero-form" class="hero-field" role="search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <label for="hero-input" class="sr-only">Search YouTube or paste a video link</label>
+        <input id="hero-input" type="search" placeholder="Search, or paste a video link" autocomplete="off" enterkeyhint="search" autofocus>
+        <button class="btn primary" type="submit">Search</button>
+      </form>
 
-  <div id="user-bar">
-  <div id="signed-out">
-    <input id="username-input" type="text" placeholder="Enter a name..." autocomplete="off" />
-    <button id="signin-btn">Sign in locally</button>
-  </div>
-
-  <div id="signed-in" style="display:none;">
-    <span id="welcome-text"></span>
-    <button id="history-btn">History</button>
-    <button id="clear-history-btn">Clear history</button>
-    <button id="signout-btn">Sign out</button>
-  </div>
-</div>
-
-<div id="history-section" style="display:none;">
-  <h2>Your History</h2>
-
-  <h3>Watch history</h3>
-  <div id="watch-history"></div>
-
-  <h3>Search history</h3>
-  <div id="search-history"></div>
-</div>
-
-  <div id="player-section">
-    <div id="player-toolbar">
-      <button id="back-btn" class="player-btn" title="Keeps playing in a mini player">← Back to results</button>
-      <button id="pip-btn" class="player-btn" title="Pop out into an always-on-top window" hidden>⧉ Pop out</button>
-      <button id="close-player-btn" class="player-btn">✕ Close</button>
-    </div>
-    <div id="player-container">
-      <iframe id="yt-player" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin"></iframe>
-      <div id="pip-placeholder">
-        <p>Playing in picture-in-picture</p>
-        <button id="pip-return-btn" class="player-btn">Bring it back</button>
+      <div class="home-focus">
+        <span id="focus-choice-label">Focus session</span>
+        <div class="segmented" role="radiogroup" aria-labelledby="focus-choice-label" id="focus-choice">
+          <button type="button" role="radio" data-min="0" aria-checked="true">Off</button>
+          <button type="button" role="radio" data-min="25" aria-checked="false">25 min</button>
+          <button type="button" role="radio" data-min="50" aria-checked="false">50 min</button>
+          <button type="button" role="radio" data-min="90" aria-checked="false">90 min</button>
+        </div>
       </div>
-      <div id="player-error">
-        <i class="ti ti-player-play" style="font-size:32px; color:#555;" aria-hidden="true"></i>
-        <p>This video can't be embedded — the creator has disabled it.<br>Open it on YouTube instead.</p>
-        <button id="open-yt-btn"><i class="ti ti-brand-youtube" aria-hidden="true"></i> Open on YouTube</button>
+
+      <div id="home-recent" class="home-recent" hidden>
+        <h2>Pick up where you left off</h2>
+        <div id="recent-chips" class="chips"></div>
+      </div>
+
+      <p class="home-hint">Press <kbd>/</kbd> to search from anywhere. No feed, no recommendations, nothing you didn't ask for.</p>
+    </div>
+  </section>
+
+  <!-- Results -->
+  <section id="results" class="view" hidden aria-labelledby="results-title">
+    <div class="results-head">
+      <h1 id="results-title">Results</h1>
+      <div class="filters">
+        <div class="segmented" role="radiogroup" aria-label="Video length" id="length-filter">
+          <button type="button" role="radio" data-v="any" aria-checked="true">Any length</button>
+          <button type="button" role="radio" data-v="short" aria-checked="false">Under 4 min</button>
+          <button type="button" role="radio" data-v="medium" aria-checked="false">4 to 20 min</button>
+          <button type="button" role="radio" data-v="long" aria-checked="false">Over 20 min</button>
+        </div>
+        <div class="segmented" role="radiogroup" aria-label="Sort" id="sort-filter">
+          <button type="button" role="radio" data-v="relevance" aria-checked="true">Relevant</button>
+          <button type="button" role="radio" data-v="date" aria-checked="false">Newest</button>
+        </div>
       </div>
     </div>
-    <div id="mini-bar">
-      <span id="mini-title"></span>
-      <button id="mini-expand-btn" class="mini-btn" title="Expand">⤢</button>
-      <button id="mini-pip-btn" class="mini-btn" title="Pop out" hidden>⧉</button>
-      <button id="mini-close-btn" class="mini-btn" title="Close">✕</button>
-    </div>
-    <div id="video-title"></div>
-  </div>
+    <ul id="result-list" class="result-list"></ul>
+    <div id="results-status" class="status" hidden></div>
+    <div class="list-footer"><button id="more-btn" class="btn" hidden>Show more results</button></div>
+  </section>
 
-  <div id="results"></div>
-  <div id="load-more-wrap"><button id="load-more">Load more</button></div>
-  <div id="status">Search for anything above.</div>
-</div>
+  <!-- Watch -->
+  <section id="watch" class="view" hidden aria-labelledby="watch-title">
+    <div class="watch-top">
+      <button id="back-btn" class="btn plain"><svg class="icon"><use href="#i-back"/></svg>Back</button>
+      <button id="close-btn" class="btn">Close video</button>
+    </div>
+    <div class="watch-grid">
+      <div>
+        <div class="player-card" id="player-card">
+          <div class="player-frame">
+            <iframe id="yt-player" title="Video player" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+            <div id="pip-overlay" class="player-overlay">
+              <svg class="icon" style="width:28px;height:28px"><use href="#i-pip"/></svg>
+              <p>Playing in picture in picture.</p>
+              <button id="pip-return-btn" class="btn">Bring it back</button>
+            </div>
+            <div id="error-overlay" class="player-overlay">
+              <p>The creator doesn't allow this video to play outside YouTube.</p>
+              <button id="error-open-btn" class="btn"><svg class="icon"><use href="#i-external"/></svg>Open on YouTube</button>
+            </div>
+          </div>
+          <div class="mini-bar">
+            <span id="mini-title" class="mini-title"></span>
+            <button id="mini-expand" class="icon-btn" aria-label="Expand" title="Expand"><svg class="icon"><use href="#i-expand"/></svg></button>
+            <button id="mini-pip" class="icon-btn" aria-label="Pop out" title="Pop out"><svg class="icon"><use href="#i-pip"/></svg></button>
+            <button id="mini-close" class="icon-btn" aria-label="Close video" title="Close"><svg class="icon"><use href="#i-close"/></svg></button>
+          </div>
+        </div>
+
+        <div class="watch-meta">
+          <h1 id="watch-title" class="watch-title"></h1>
+          <div class="meta" id="watch-sub"></div>
+          <div class="watch-actions">
+            <button id="save-btn" class="btn" aria-pressed="false"><svg class="icon"><use href="#i-bookmark"/></svg><span>Save</span></button>
+            <button id="pip-btn" class="btn" hidden><svg class="icon"><use href="#i-pip"/></svg>Pop out</button>
+            <button id="yt-btn" class="btn"><svg class="icon"><use href="#i-external"/></svg>YouTube</button>
+            <div class="speed">
+              <span id="speed-label">Speed</span>
+              <div class="segmented" role="radiogroup" aria-labelledby="speed-label" id="speed">
+                <button type="button" role="radio" data-v="1" aria-checked="true">1×</button>
+                <button type="button" role="radio" data-v="1.25" aria-checked="false">1.25×</button>
+                <button type="button" role="radio" data-v="1.5" aria-checked="false">1.5×</button>
+                <button type="button" role="radio" data-v="2" aria-checked="false">2×</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="notes" aria-labelledby="notes-title">
+        <div class="notes-head">
+          <h2 id="notes-title">Notes</h2>
+          <button id="copy-notes" class="icon-btn" aria-label="Copy notes as Markdown" title="Copy as Markdown"><svg class="icon"><use href="#i-copy"/></svg></button>
+        </div>
+        <ul id="note-list" class="note-list"></ul>
+        <p id="notes-empty" class="notes-empty">Write what you want to remember. Each note is pinned to the moment in the video.</p>
+        <form id="composer" class="composer">
+          <label for="note-input" class="sr-only">New note</label>
+          <textarea id="note-input" placeholder="Add a note"></textarea>
+          <div class="composer-row">
+            <small><kbd>⌘</kbd> <kbd>Enter</kbd></small>
+            <button id="add-note" class="btn primary" type="submit">Add at 0:00</button>
+          </div>
+        </form>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<!-- Library -->
+<dialog id="library" class="side-sheet" aria-labelledby="library-title">
+  <div class="sheet-head">
+    <h2 id="library-title" tabindex="-1" autofocus>Library</h2>
+    <button class="icon-btn" data-close aria-label="Close"><svg class="icon"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="sheet-body">
+    <div class="stats">
+      <div class="stat"><b id="stat-today">0 min</b><span>Focused today</span></div>
+      <div class="stat"><b id="stat-week">0 min</b><span>Last 7 days</span></div>
+    </div>
+    <div class="segmented" role="radiogroup" aria-label="Library section" id="lib-tabs">
+      <button type="button" role="radio" data-v="saved" aria-checked="true">Saved</button>
+      <button type="button" role="radio" data-v="notes" aria-checked="false">Notes</button>
+      <button type="button" role="radio" data-v="history" aria-checked="false">History</button>
+    </div>
+    <ul id="lib-list" class="lib-list"></ul>
+    <div id="lib-foot" class="lib-foot"></div>
+  </div>
+</dialog>
+
+<!-- Settings -->
+<dialog id="settings" class="side-sheet" aria-labelledby="settings-title">
+  <div class="sheet-head">
+    <h2 id="settings-title" tabindex="-1" autofocus>Settings</h2>
+    <button class="icon-btn" data-close aria-label="Close"><svg class="icon"><use href="#i-close"/></svg></button>
+  </div>
+  <div class="sheet-body">
+    <p class="group-title">Playback</p>
+    <div class="group">
+      <div class="row">
+        <span class="row-label" id="pb-label">Play videos</span>
+        <div class="segmented" role="radiogroup" aria-labelledby="pb-label" id="set-playback">
+          <button type="button" role="radio" data-v="embed" aria-checked="true">Here</button>
+          <button type="button" role="radio" data-v="youtube" aria-checked="false">On YouTube</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="group-title">Fewer distractions</p>
+    <div class="group">
+      <label class="row">
+        <span class="row-label">Hide Shorts<small>Skip videos under a minute</small></span>
+        <span class="switch"><input type="checkbox" id="set-shorts"><span></span></span>
+      </label>
+      <label class="row">
+        <span class="row-label">Hide thumbnails<small>Choose by title, not by clickbait</small></span>
+        <span class="switch"><input type="checkbox" id="set-textonly"><span></span></span>
+      </label>
+      <label class="row">
+        <span class="row-label">Keep history<small>Stored only in this browser</small></span>
+        <span class="switch"><input type="checkbox" id="set-history"><span></span></span>
+      </label>
+    </div>
+
+    <p class="group-title">Appearance</p>
+    <div class="group">
+      <div class="row">
+        <span class="row-label" id="theme-label">Theme</span>
+        <div class="segmented" role="radiogroup" aria-labelledby="theme-label" id="set-theme">
+          <button type="button" role="radio" data-v="auto" aria-checked="true">Auto</button>
+          <button type="button" role="radio" data-v="light" aria-checked="false">Light</button>
+          <button type="button" role="radio" data-v="dark" aria-checked="false">Dark</button>
+        </div>
+      </div>
+    </div>
+
+    <p class="group-title">Keyboard shortcuts</p>
+    <div class="group">
+      <div class="shortcut-row"><span>Search</span><span><kbd>/</kbd></span></div>
+      <div class="shortcut-row"><span>Write a note</span><span><kbd>N</kbd></span></div>
+      <div class="shortcut-row"><span>Save video</span><span><kbd>S</kbd></span></div>
+      <div class="shortcut-row"><span>Open library</span><span><kbd>L</kbd></span></div>
+      <div class="shortcut-row"><span>Go back</span><span><kbd>Esc</kbd></span></div>
+    </div>
+
+    <p class="group-title">Data</p>
+    <div class="group">
+      <div class="row">
+        <span class="row-label">Everything stays in this browser<small>Saved videos, notes, history and stats</small></span>
+        <button id="erase-btn" class="btn danger">Erase all</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<!-- Focus session -->
+<dialog id="focus-sheet" class="alert" aria-labelledby="focus-sheet-title">
+  <h2 id="focus-sheet-title">Focus session</h2>
+  <p id="focus-sheet-text"></p>
+  <div class="stack">
+    <button id="focus-extend" class="btn">Add 10 minutes</button>
+    <button id="focus-end" class="btn danger">End session</button>
+    <button class="btn plain" data-close>Keep going</button>
+  </div>
+</dialog>
+
+<dialog id="done-sheet" class="alert" aria-labelledby="done-title">
+  <div class="done-ring"><svg class="icon"><use href="#i-check"/></svg></div>
+  <h2 id="done-title">Session complete</h2>
+  <p id="done-text"></p>
+  <div class="stack">
+    <button id="done-break" class="btn primary">Take a break</button>
+    <button id="done-more" class="btn">Keep going for 10 minutes</button>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script>
+'use strict';
+
 const API_KEY = 'AIzaSyAKQLUA2J7j1YOlmy93z-DIFOkJWPy_kBQ';
+const $ = id => document.getElementById(id);
+const PIP_MODE = new URLSearchParams(location.search).has('pip');
 
-let nextPageToken = '';
-let currentQuery = '';
-let currentVideoId = '';
+/* ===================== Store ===================== */
+const STORE_KEY = 'cleantube.v2';
+const defaults = () => ({
+  settings: { playback: 'embed', hideShorts: true, textOnly: false, keepHistory: true, theme: 'auto' },
+  saved: [],      // [{id,title,channel,thumb,addedAt}]
+  history: [],    // [{id,title,channel,thumb,watchedAt}]
+  searches: [],   // [query]
+  notes: {},      // {videoId: {title, channel, thumb, items:[{t,text,at}]}}
+  stats: {},      // {'YYYY-MM-DD': seconds}
+  session: null   // {startedAt, endsAt, minutes, intention}
+});
 
-const searchInput = document.getElementById('search-input');
-const searchBtn = document.getElementById('search-btn');
-const resultsEl = document.getElementById('results');
-const modeYoutubeBtn = document.getElementById('mode-youtube');
-const modeEmbedBtn = document.getElementById('mode-embed');
+function loadStore() {
+  let data = null;
+  try { data = JSON.parse(localStorage.getItem(STORE_KEY)); } catch {}
+  if (!data) data = migrateV1();
+  const d = defaults();
+  return { ...d, ...data, settings: { ...d.settings, ...(data.settings || {}) } };
+}
 
-let playbackMode = localStorage.getItem('focusTubePlaybackMode') || 'youtube';
-const statusEl = document.getElementById('status');
-const playerSection = document.getElementById('player-section');
-const ytPlayer = document.getElementById('yt-player');
-const playerError = document.getElementById('player-error');
-const videoTitleEl = document.getElementById('video-title');
-const backBtn = document.getElementById('back-btn');
-const loadMoreBtn = document.getElementById('load-more');
-const openYtBtn = document.getElementById('open-yt-btn');
+// Carry over history from the original CleanTube.
+function migrateV1() {
+  const d = defaults();
+  try {
+    const watch = JSON.parse(localStorage.getItem('cleanTubeWatchHistory') || '[]');
+    const searches = JSON.parse(localStorage.getItem('cleanTubeSearchHistory') || '[]');
+    d.history = watch.filter(v => v && v.id).map(v => ({ id: v.id, title: v.title, channel: v.channel || '', thumb: v.thumb || '', watchedAt: v.watchedAt || new Date().toISOString() }));
+    d.searches = searches.map(s => s.query).filter(Boolean).slice(0, 20);
+    if (localStorage.getItem('focusTubePlaybackMode') === 'youtube') d.settings.playback = 'youtube';
+  } catch {}
+  return d;
+}
 
-const usernameInput = document.getElementById('username-input');
-const signinBtn = document.getElementById('signin-btn');
-const signoutBtn = document.getElementById('signout-btn');
-const historyBtn = document.getElementById('history-btn');
-const clearHistoryBtn = document.getElementById('clear-history-btn');
-const signedOutEl = document.getElementById('signed-out');
-const signedInEl = document.getElementById('signed-in');
-const welcomeText = document.getElementById('welcome-text');
-const historySection = document.getElementById('history-section');
-const watchHistoryEl = document.getElementById('watch-history');
-const searchHistoryEl = document.getElementById('search-history');
-const loadMoreWrap = document.getElementById('load-more-wrap');
-const pipBtn = document.getElementById('pip-btn');
-const closePlayerBtn = document.getElementById('close-player-btn');
-const pipPlaceholder = document.getElementById('pip-placeholder');
-const pipReturnBtn = document.getElementById('pip-return-btn');
-const miniTitleEl = document.getElementById('mini-title');
-const miniExpandBtn = document.getElementById('mini-expand-btn');
-const miniPipBtn = document.getElementById('mini-pip-btn');
-const miniCloseBtn = document.getElementById('mini-close-btn');
+let store = loadStore();
+let saveTimer = null;
+function save(now = false) {
+  clearTimeout(saveTimer);
+  const write = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch {} };
+  if (now) write(); else saveTimer = setTimeout(write, 200);
+}
 
-// Player state. layout is where the in-page player sits; inPip means the
-// video currently lives in a Document Picture-in-Picture window instead.
-const supportsDocPiP = 'documentPictureInPicture' in window;
-const player = {
-  active: false,
-  layout: 'full', // 'full' | 'mini'
-  inPip: false,
-  embedError: false,
-  title: '',
-  lastTime: 0,
-  playing: false
-};
-let pipWindow = null;
-let pipIframe = null;
-let closingPip = false;
+/* ===================== Utils ===================== */
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+const decoder = document.createElement('textarea');
+function decode(html) { decoder.innerHTML = html || ''; return decoder.value; }
 
-
-const STORAGE_KEYS = {
-  user: 'cleanTubeUser',
-  watchHistory: 'cleanTubeWatchHistory',
-  searchHistory: 'cleanTubeSearchHistory'
-};
-
-  function extractYouTubeVideoId(input) {
-  const value = input.trim();
-
+function parseISODuration(iso) {
+  const m = /P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(iso || '');
+  if (!m) return 0;
+  return (+m[1] || 0) * 86400 + (+m[2] || 0) * 3600 + (+m[3] || 0) * 60 + (+m[4] || 0);
+}
+function clock(sec) {
+  sec = Math.max(0, Math.floor(sec || 0));
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
+}
+function minutesLabel(sec) {
+  const min = Math.round(sec / 60);
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60), m = min % 60;
+  return m ? `${h} h ${m} min` : `${h} h`;
+}
+function ago(iso) {
+  if (!iso) return '';
+  const s = (Date.now() - new Date(iso).getTime()) / 1000;
+  const units = [[31536000, 'year'], [2592000, 'month'], [604800, 'week'], [86400, 'day'], [3600, 'hour'], [60, 'minute']];
+  for (const [n, u] of units) {
+    const v = Math.floor(s / n);
+    if (v >= 1) return `${v} ${u}${v > 1 ? 's' : ''} ago`;
+  }
+  return 'Just now';
+}
+function dayKey(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function isTyping(el = document.activeElement) {
+  return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+}
+function extractVideoId(input) {
+  const v = input.trim();
   const patterns = [
-    /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
-    /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
-    /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-    /(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/
+    /youtube\.com\/watch\?(?:.*&)?v=([\w-]{11})/,
+    /youtu\.be\/([\w-]{11})/,
+    /youtube\.com\/(?:embed|shorts|live)\/([\w-]{11})/
   ];
-
-  for (const pattern of patterns) {
-    const match = value.match(pattern);
-    if (match) return match[1];
-  }
-
-  if (/^[a-zA-Z0-9_-]{11}$/.test(value)) {
-    return value;
-  }
-
+  for (const p of patterns) { const m = v.match(p); if (m) return m[1]; }
   return null;
 }
+function thumbFor(id) { return `https://i.ytimg.com/vi/${id}/mqdefault.jpg`; }
 
-function openVideoFromInput(input) {
-  const videoId = extractYouTubeVideoId(input);
-  if (!videoId) return false;
-
-  playVideo(
-    videoId,
-    'Direct video link',
-    `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
-    'Pasted link'
-  );
-
-  return true;
+let toastTimer = null;
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
 }
 
-function escapeHTML(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
-}
-
-function getStoredJSON(key, fallback) {
-  try {
-    return JSON.parse(localStorage.getItem(key)) || fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function setStoredJSON(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
-function getCurrentUser() {
-  return localStorage.getItem(STORAGE_KEYS.user);
-}
-
-function updateAuthUI() {
-  const user = getCurrentUser();
-
-  if (user) {
-    signedOutEl.style.display = 'none';
-    signedInEl.style.display = 'flex';
-    welcomeText.textContent = `Signed in as ${user}`;
-  } else {
-    signedOutEl.style.display = 'flex';
-    signedInEl.style.display = 'none';
-    historySection.style.display = 'none';
-  }
-}
-
-function signIn() {
-  const name = usernameInput.value.trim();
-  if (!name) return;
-
-  localStorage.setItem(STORAGE_KEYS.user, name);
-  usernameInput.value = '';
-  updateAuthUI();
-}
-
-function signOut() {
-  localStorage.removeItem(STORAGE_KEYS.user);
-  updateAuthUI();
-}
-
-function addSearchHistory(query) {
-  if (!getCurrentUser()) return;
-
-  const history = getStoredJSON(STORAGE_KEYS.searchHistory, []);
-  const cleaned = history.filter(item => item.query.toLowerCase() !== query.toLowerCase());
-
-  cleaned.unshift({
-    query,
-    searchedAt: new Date().toISOString()
+function bindSegmented(el, onChange) {
+  el.addEventListener('click', e => {
+    const b = e.target.closest('button[role="radio"]');
+    if (!b) return;
+    setSegmented(el, b.dataset.v ?? b.dataset.min);
+    onChange(b.dataset.v ?? b.dataset.min);
   });
-
-  setStoredJSON(STORAGE_KEYS.searchHistory, cleaned.slice(0, 50));
-}
-
-function addWatchHistory(video) {
-  if (!getCurrentUser()) return;
-
-  const history = getStoredJSON(STORAGE_KEYS.watchHistory, []);
-  const cleaned = history.filter(item => item.id !== video.id);
-
-  cleaned.unshift({
-    ...video,
-    watchedAt: new Date().toISOString()
+  el.addEventListener('keydown', e => {
+    if (!['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+    const btns = [...el.querySelectorAll('button[role="radio"]')];
+    const i = btns.findIndex(b => b.getAttribute('aria-checked') === 'true');
+    const next = btns[(i + (e.key === 'ArrowRight' ? 1 : btns.length - 1)) % btns.length];
+    next.focus(); next.click();
   });
-
-  setStoredJSON(STORAGE_KEYS.watchHistory, cleaned.slice(0, 100));
+}
+function setSegmented(el, value) {
+  el.querySelectorAll('button[role="radio"]').forEach(b => {
+    const on = String(b.dataset.v ?? b.dataset.min) === String(value);
+    b.setAttribute('aria-checked', on);
+    b.tabIndex = on ? 0 : -1;
+  });
 }
 
-function renderHistory() {
-  const watchHistory = getStoredJSON(STORAGE_KEYS.watchHistory, []);
-  const searchHistory = getStoredJSON(STORAGE_KEYS.searchHistory, []);
+/* ===================== YouTube Data API ===================== */
+const videoCache = new Map(); // id -> {id,title,channel,thumb,published,duration,desc}
 
-  if (!watchHistory.length) {
-    watchHistoryEl.innerHTML = `<div class="history-empty">No watched videos yet.</div>`;
-  } else {
-    watchHistoryEl.innerHTML = `<div class="history-grid"></div>`;
-    const grid = watchHistoryEl.querySelector('.history-grid');
-
-    watchHistory.forEach(item => {
-      const card = document.createElement('div');
-      card.className = 'result-card';
-
-      card.innerHTML = `
-        <img src="${escapeHTML(item.thumb)}" alt="" loading="lazy">
-        <div class="result-info">
-          <div class="result-title">${escapeHTML(item.title)}</div>
-          <div class="result-meta">${escapeHTML(item.channel || '')}</div>
-        </div>
-      `;
-
-      card.addEventListener('click', () => {
-        historySection.style.display = 'none';
-        playVideo(item.id, item.title, item.thumb, item.channel);
-      });
-
-      grid.appendChild(card);
-    });
-  }
-
-  if (!searchHistory.length) {
-    searchHistoryEl.innerHTML = `<div class="history-empty">No searches yet.</div>`;
-  } else {
-    searchHistoryEl.innerHTML = '';
-    searchHistory.forEach(item => {
-      const div = document.createElement('div');
-      div.className = 'history-search-item';
-      div.textContent = item.query;
-
-      div.addEventListener('click', () => {
-        searchInput.value = item.query;
-        historySection.style.display = 'none';
-        currentQuery = item.query;
-        minimizePlayer();
-        resultsEl.style.display = 'grid';
-        document.getElementById('load-more-wrap').style.display = 'block';
-        search(item.query);
-      });
-
-      searchHistoryEl.appendChild(div);
-    });
-  }
+async function api(path, params) {
+  const url = `https://www.googleapis.com/youtube/v3/${path}?${new URLSearchParams({ ...params, key: API_KEY })}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message || 'YouTube returned an error');
+  return data;
 }
 
-function toggleHistory() {
-  const showing = historySection.style.display === 'block';
-
-  if (showing) {
-    historySection.style.display = 'none';
-    resultsEl.style.display = 'grid';
-    return;
-  }
-
-  minimizePlayer();
-  resultsEl.style.display = 'none';
-  loadMoreWrap.style.display = 'none';
-
-  renderHistory();
-  historySection.style.display = 'block';
-}
-
-function clearHistory() {
-  localStorage.removeItem(STORAGE_KEYS.watchHistory);
-  localStorage.removeItem(STORAGE_KEYS.searchHistory);
-  renderHistory();
-}
-
-function updatePlaybackModeUI() {
-  modeYoutubeBtn.classList.toggle('active', playbackMode === 'youtube');
-  modeEmbedBtn.classList.toggle('active', playbackMode === 'embed');
-}
-
-function setPlaybackMode(mode) {
-  playbackMode = mode;
-  localStorage.setItem('focusTubePlaybackMode', mode);
-  updatePlaybackModeUI();
-}
-
-function openOnYouTube(id) {
-  window.open(`https://www.youtube.com/watch?v=${id}`, '_blank');
-}
-
-async function search(query, pageToken = '') {
-  statusEl.textContent = 'Searching...';
-  historySection.style.display = 'none';
-
-  if (!pageToken) {
-    resultsEl.innerHTML = '';
-    addSearchHistory(query);
-  }
-
-  const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=12&order=relevance&q=${encodeURIComponent(query)}${pageToken ? '&pageToken=' + pageToken : ''}&key=${API_KEY}`;
-
+async function fetchDetails(ids) {
+  const missing = ids.filter(id => !videoCache.get(id)?.durationKnown);
+  if (!missing.length) return;
   try {
-    const res = await fetch(url);
-    const data = await res.json();
-
-    if (data.error) {
-      statusEl.textContent = 'API error: ' + data.error.message;
-      return;
+    const data = await api('videos', { part: 'snippet,contentDetails', id: missing.join(','), maxResults: 50 });
+    for (const v of data.items || []) {
+      const prev = videoCache.get(v.id) || {};
+      videoCache.set(v.id, {
+        ...prev,
+        id: v.id,
+        title: decode(v.snippet.title),
+        channel: v.snippet.channelTitle,
+        thumb: v.snippet.thumbnails?.medium?.url || thumbFor(v.id),
+        published: v.snippet.publishedAt,
+        desc: prev.desc ?? decode(v.snippet.description || '').slice(0, 220),
+        duration: parseISODuration(v.contentDetails?.duration),
+        durationKnown: true
+      });
     }
+  } catch {}
+}
 
-    nextPageToken = data.nextPageToken || '';
-    statusEl.textContent = '';
-    renderResults(data.items || []);
-    loadMoreBtn.style.display = nextPageToken ? 'inline-block' : 'none';
-  } catch(e) {
-    statusEl.textContent = 'Something went wrong.';
+/* ===================== Search ===================== */
+const search = { query: '', length: 'any', order: 'relevance', items: [], next: '', key: '', loading: false };
+
+async function runSearch(query, { more = false } = {}) {
+  const key = `${query}|${search.length}|${search.order}|${store.settings.playback}`;
+  if (!more && key === search.key && search.items.length) { renderResults(); return; }
+  if (search.loading) return;
+
+  if (!more) {
+    search.query = query; search.key = key; search.items = []; search.next = '';
+    renderSkeleton();
+    rememberSearch(query);
+  }
+  search.loading = true;
+  $('more-btn').disabled = true;
+
+  const params = {
+    part: 'snippet', type: 'video', maxResults: 15, q: query,
+    order: search.order, videoDuration: search.length, safeSearch: 'moderate'
+  };
+  if (store.settings.playback === 'embed') params.videoEmbeddable = 'true';
+  if (more && search.next) params.pageToken = search.next;
+
+  try {
+    const data = await api('search', params);
+    if (key !== search.key) return; // a newer search started
+    const ids = [];
+    for (const item of data.items || []) {
+      const id = item.id?.videoId;
+      if (!id) continue;
+      ids.push(id);
+      const prev = videoCache.get(id) || {};
+      videoCache.set(id, {
+        ...prev, id,
+        title: decode(item.snippet.title),
+        channel: item.snippet.channelTitle,
+        thumb: item.snippet.thumbnails?.medium?.url || thumbFor(id),
+        published: item.snippet.publishedAt,
+        desc: decode(item.snippet.description || '')
+      });
+    }
+    await fetchDetails(ids);
+    if (key !== search.key) return;
+    search.items.push(...ids.filter(id => !search.items.includes(id)));
+    search.next = data.nextPageToken || '';
+    renderResults();
+  } catch (err) {
+    if (key !== search.key) return;
+    showStatus("Search didn't go through", `${err.message}. Check your connection and try again.`);
+    $('result-list').innerHTML = '';
+  } finally {
+    search.loading = false;
+    $('more-btn').disabled = false;
   }
 }
 
-function renderResults(items) {
-  items.forEach(item => {
-    const id = item.id.videoId;
-    const title = item.snippet.title;
-    const channel = item.snippet.channelTitle;
-    const thumb = item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url;
-
-    const card = document.createElement('div');
-    card.className = 'result-card';
-
-    card.innerHTML = `
-      <img src="${escapeHTML(thumb)}" alt="" loading="lazy">
-      <div class="result-info">
-        <div class="result-title">${escapeHTML(title)}</div>
-        <div class="result-meta">${escapeHTML(channel)}</div>
-      </div>
-    `;
-
-    card.addEventListener('click', () => playVideo(id, title, thumb, channel));
-    resultsEl.appendChild(card);
-  });
+function isShort(v) {
+  return (v.durationKnown && v.duration > 0 && v.duration <= 60) || /#shorts?\b/i.test(v.title || '');
 }
 
-// ---------- Embed URL + playback position tracking ----------
+function renderSkeleton() {
+  $('results-title').textContent = search.query;
+  $('results-status').hidden = true;
+  $('more-btn').hidden = true;
+  $('result-list').innerHTML = Array.from({ length: 5 }, () => `
+    <li class="result skeleton" aria-hidden="true">
+      <div class="result-main"><div class="thumb"></div>
+      <div class="result-text"><div class="bar" style="width:78%"></div><div class="bar" style="width:40%"></div></div></div>
+    </li>`).join('');
+}
+
+function showStatus(title, text) {
+  const s = $('results-status');
+  s.hidden = false;
+  s.innerHTML = `<strong>${esc(title)}</strong>${esc(text)}`;
+}
+
+function renderResults() {
+  $('results-title').textContent = search.query;
+  document.title = `${search.query} – CleanTube`;
+  const list = $('result-list');
+  const items = search.items.map(id => videoCache.get(id)).filter(v => v && !(store.settings.hideShorts && isShort(v)));
+
+  $('results-status').hidden = true;
+  if (!items.length) {
+    list.innerHTML = '';
+    showStatus('No videos found', 'Try different words, or change the length filter.');
+  } else {
+    list.innerHTML = items.map(v => resultRow(v)).join('');
+  }
+  $('more-btn').hidden = !search.next;
+}
+
+function resultRow(v) {
+  const saved = isSaved(v.id);
+  const dur = v.durationKnown ? clock(v.duration) : '';
+  return `
+    <li class="result">
+      <button class="result-main" data-play="${esc(v.id)}">
+        <div class="thumb"><img src="${esc(v.thumb)}" alt="" loading="lazy">${dur ? `<span class="duration">${dur}</span>` : ''}</div>
+        <div class="result-text">
+          <h3 class="result-title">${esc(v.title)}</h3>
+          <div class="meta"><span>${esc(v.channel)}</span>${dur ? `<span class="inline-duration">${dur}</span>` : ''}<span>${esc(ago(v.published))}</span></div>
+          ${v.desc ? `<p class="result-desc">${esc(v.desc)}</p>` : ''}
+        </div>
+      </button>
+      <button class="icon-btn" data-save="${esc(v.id)}" aria-pressed="${saved}" aria-label="${saved ? 'Remove from saved' : 'Save for later'}" title="${saved ? 'Saved' : 'Save for later'}">
+        <svg class="icon"><use href="#i-bookmark"/></svg>
+      </button>
+    </li>`;
+}
+
+function rememberSearch(q) {
+  if (!store.settings.keepHistory) return;
+  store.searches = [q, ...store.searches.filter(s => s.toLowerCase() !== q.toLowerCase())].slice(0, 20);
+  save();
+}
+
+/* ===================== Saved / history ===================== */
+function isSaved(id) { return store.saved.some(v => v.id === id); }
+function videoSummary(id) {
+  const v = videoCache.get(id) || store.saved.find(s => s.id === id) || store.history.find(h => h.id === id) || {};
+  return { id, title: v.title || 'YouTube video', channel: v.channel || '', thumb: v.thumb || thumbFor(id) };
+}
+function toggleSave(id) {
+  if (isSaved(id)) {
+    store.saved = store.saved.filter(v => v.id !== id);
+    toast('Removed from saved');
+  } else {
+    store.saved.unshift({ ...videoSummary(id), addedAt: new Date().toISOString() });
+    toast('Saved for later');
+  }
+  save();
+  document.querySelectorAll(`[data-save="${CSS.escape(id)}"]`).forEach(b => {
+    const on = isSaved(id);
+    b.setAttribute('aria-pressed', on);
+    b.setAttribute('aria-label', on ? 'Remove from saved' : 'Save for later');
+  });
+  if (id === player.id) syncSaveBtn();
+  if ($('library').open) renderLibrary();
+}
+function addHistory(id) {
+  if (!store.settings.keepHistory) return;
+  store.history = [{ ...videoSummary(id), watchedAt: new Date().toISOString() }, ...store.history.filter(v => v.id !== id)].slice(0, 200);
+  save();
+}
+
+/* ===================== Player ===================== */
+const ytPlayer = $('yt-player');
+const supportsDocPiP = 'documentPictureInPicture' in window;
+const player = { id: '', active: false, docked: false, inPip: false, error: false, lastTime: 0, playing: false, rate: 1 };
+let pipWindow = null, pipIframe = null, closingPip = false;
 
 function buildEmbedUrl(id, { start = 0, autoplay = true } = {}) {
-  const params = new URLSearchParams({
-    autoplay: autoplay ? '1' : '0',
-    rel: '0',
-    modestbranding: '1',
-    enablejsapi: '1',
-    playsinline: '1'
-  });
-  if (start > 0) params.set('start', String(Math.floor(start)));
-  if (location.origin && location.origin !== 'null') params.set('origin', location.origin);
-  return `https://www.youtube.com/embed/${id}?${params}`;
+  const p = new URLSearchParams({ autoplay: autoplay ? 1 : 0, rel: 0, modestbranding: 1, enablejsapi: 1, playsinline: 1, iv_load_policy: 3 });
+  if (start > 0) p.set('start', Math.floor(start));
+  if (location.origin && location.origin !== 'null') p.set('origin', location.origin);
+  return `https://www.youtube.com/embed/${id}?${p}`;
 }
-
-// URL of this same page in "pip mode" (see startPipMode at the bottom).
 function pipPageUrl(id, start = 0, autoplay = true) {
-  const base = location.href.split(/[?#]/)[0];
-  return `${base}?pip=${encodeURIComponent(id)}&t=${Math.floor(start)}&a=${autoplay ? 1 : 0}`;
+  return `${location.href.split(/[?#]/)[0]}?pip=${encodeURIComponent(id)}&t=${Math.floor(start)}&a=${autoplay ? 1 : 0}&r=${player.rate}`;
 }
 
-// The YouTube embed reports its current time and state over postMessage once
-// we say we're listening. We use that to resume at the same spot when the
-// video moves in or out of the picture-in-picture window.
+// The embed reports time and state over postMessage once told we're listening.
 function trackPlayer(iframe, win, onEvent) {
-  let heardBack = false;
-  let pinger = null;
-
+  let heard = false, pinger = null;
   win.addEventListener('message', e => {
     if (e.source !== iframe.contentWindow) return;
     let data;
     try { data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch { return; }
     if (!data || !data.event) return;
-    heardBack = true;
+    heard = true;
     onEvent(data);
   });
-
   iframe.addEventListener('load', () => {
-    heardBack = false;
-    clearInterval(pinger);
+    heard = false; clearInterval(pinger);
     let tries = 0;
     pinger = setInterval(() => {
-      if (heardBack || ++tries > 20) return clearInterval(pinger);
-      try {
-        iframe.contentWindow?.postMessage(JSON.stringify({ event: 'listening', id: 1, channel: 'widget' }), '*');
-      } catch {}
+      if (heard || ++tries > 20) return clearInterval(pinger);
+      try { iframe.contentWindow?.postMessage(JSON.stringify({ event: 'listening', id: 1, channel: 'widget' }), '*'); } catch {}
     }, 250);
   });
 }
-
 function handlePlayerEvent(data) {
-  if (data.info && typeof data.info === 'object') {
-    if (typeof data.info.currentTime === 'number') player.lastTime = data.info.currentTime;
-    if (typeof data.info.playerState === 'number') player.playing = data.info.playerState === 1;
+  const info = data.info;
+  if (info && typeof info === 'object') {
+    if (typeof info.currentTime === 'number') player.lastTime = info.currentTime;
+    if (typeof info.playerState === 'number') {
+      const wasPlaying = player.playing;
+      player.playing = info.playerState === 1;
+      if (player.playing && !wasPlaying && player.rate !== 1) command('setPlaybackRate', [player.rate]);
+    }
   }
-  if (data.event === 'onStateChange' && typeof data.info === 'number') {
-    player.playing = data.info === 1;
-  }
+  if (data.event === 'onStateChange' && typeof info === 'number') player.playing = info === 1;
 }
-
 trackPlayer(ytPlayer, window, data => {
   if (player.inPip) return;
   handlePlayerEvent(data);
-  // 101 / 150 = owner disabled embedding, 100 = video not found
   if (data.event === 'onError' && [100, 101, 150].includes(data.info)) showEmbedError();
 });
 
-// ---------- Layout ----------
-
-function renderPlayer() {
-  const showSection = player.active && !(player.inPip && player.layout === 'mini');
-  playerSection.style.display = showSection ? 'block' : 'none';
-  playerSection.classList.toggle('mini', player.layout === 'mini');
-
-  pipPlaceholder.style.display = player.inPip ? 'flex' : 'none';
-  ytPlayer.style.display = player.inPip || player.embedError ? 'none' : 'block';
-  if (player.inPip) playerError.style.display = 'none';
-
-  const canPip = supportsDocPiP && player.active && !player.inPip && !player.embedError;
-  pipBtn.hidden = !canPip;
-  miniPipBtn.hidden = !canPip;
-
-  videoTitleEl.textContent = player.title;
-  miniTitleEl.textContent = player.title;
+function command(func, args = []) {
+  try {
+    if (player.inPip && pipIframe?.contentWindow?.ctCommand) pipIframe.contentWindow.ctCommand(func, args);
+    else ytPlayer.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), '*');
+  } catch {}
 }
 
-function showResultsArea() {
-  resultsEl.style.display = 'grid';
-  loadMoreWrap.style.display = 'block';
-}
+async function openVideo(id) {
+  if (player.active && player.id === id) { undock(); return; }
+  if (pipWindow) { closingPip = true; pipWindow.close(); }
 
-function hideResultsArea() {
-  resultsEl.style.display = 'none';
-  loadMoreWrap.style.display = 'none';
-  historySection.style.display = 'none';
-  statusEl.textContent = '';
-}
-
-// Shrink to the corner instead of stopping, so the video keeps playing
-// while you search or browse history.
-function minimizePlayer() {
-  if (!player.active) return;
-  player.layout = 'mini';
-  renderPlayer();
-}
-
-function expandPlayer() {
-  if (!player.active) return;
-  player.layout = 'full';
-  hideResultsArea();
-  renderPlayer();
-  window.scrollTo(0, 0);
-}
-
-function closePlayer() {
-  if (pipWindow) {
-    closingPip = true;
-    pipWindow.close();
-  }
-  player.active = false;
-  player.inPip = false;
-  player.embedError = false;
-  ytPlayer.src = 'about:blank';
-  playerError.style.display = 'none';
-  player.layout = 'full';
-  renderPlayer();
-  if (historySection.style.display !== 'block') showResultsArea();
-}
-
-// ---------- Playback ----------
-
-function playVideo(id, title, thumb = '', channel = '') {
-  currentVideoId = id;
-
-  addWatchHistory({
-    id,
-    title,
-    thumb,
-    channel
-  });
-
-  if (playbackMode === 'youtube') {
-    openOnYouTube(id);
-    return;
-  }
-
-  player.active = true;
-  player.title = title;
-  player.lastTime = 0;
-  player.playing = true;
-  player.embedError = false;
-  playerError.style.display = 'none';
-
-  if (player.inPip && pipIframe) {
-    // Already popped out: swap the video in the PiP window, leave the page alone.
-    pipIframe.src = pipPageUrl(id, 0, true);
-    pipWindow.document.title = title;
-    renderPlayer();
-    return;
-  }
-
+  Object.assign(player, { id, active: true, docked: false, inPip: false, error: false, lastTime: 0, playing: true });
   ytPlayer.src = buildEmbedUrl(id);
-  player.layout = 'full';
-  hideResultsArea();
-  renderPlayer();
-  window.scrollTo(0, 0);
+  renderWatch();
+  addHistory(id);
+  if (!videoCache.get(id)?.durationKnown) {
+    await fetchDetails([id]);
+    if (player.id === id) { renderWatch(); addHistory(id); }
+  }
+}
+
+function renderWatch() {
+  const v = videoSummary(player.id);
+  const full = videoCache.get(player.id);
+  $('watch-title').textContent = v.title;
+  $('mini-title').textContent = v.title;
+  if (route.name === 'watch') document.title = `${v.title} – CleanTube`;
+  const sub = [`<span>${esc(v.channel)}</span>`];
+  if (full?.durationKnown) sub.push(`<span>${clock(full.duration)}</span>`);
+  if (full?.published) sub.push(`<span>${esc(ago(full.published))}</span>`);
+  $('watch-sub').innerHTML = sub.join('');
+  syncSaveBtn();
+  renderNotes();
+  renderPlayerState();
+}
+
+function renderPlayerState() {
+  $('pip-overlay').style.display = player.inPip ? 'flex' : 'none';
+  $('error-overlay').style.display = player.error && !player.inPip ? 'flex' : 'none';
+  ytPlayer.style.visibility = player.inPip || player.error ? 'hidden' : 'visible';
+  const canPip = supportsDocPiP && player.active && !player.inPip && !player.error;
+  $('pip-btn').hidden = !canPip;
+  $('mini-pip').hidden = !canPip;
+  const w = $('watch');
+  w.classList.toggle('docked', player.active && player.docked);
+  // While popped out and away from the watch page, there's nothing to show in the corner.
+  w.classList.toggle('hidden-dock', player.docked && player.inPip);
+  setSegmented($('speed'), player.rate);
+}
+
+function syncSaveBtn() {
+  const on = isSaved(player.id);
+  const b = $('save-btn');
+  b.setAttribute('aria-pressed', on);
+  b.querySelector('span').textContent = on ? 'Saved' : 'Save';
+}
+
+function dock() {
+  if (!player.active) return;
+  player.docked = true;
+  renderPlayerState();
+}
+function undock() {
+  player.docked = false;
+  renderPlayerState();
+}
+
+function closeVideo() {
+  if (pipWindow) { closingPip = true; pipWindow.close(); }
+  Object.assign(player, { id: '', active: false, docked: false, inPip: false, error: false, playing: false });
+  ytPlayer.src = 'about:blank';
+  renderPlayerState();
+  if (route.name === 'watch') goBack();
 }
 
 function showEmbedError() {
-  player.embedError = true;
-  playerError.style.display = 'flex';
-  // An unembeddable video in the corner is useless, so bring it up front.
-  if (player.layout === 'mini') expandPlayer();
-  else renderPlayer();
+  player.error = true;
+  if (player.docked && route.name !== 'watch') navigate(`#/watch?v=${player.id}`);
+  renderPlayerState();
 }
 
-// ---------- Document Picture-in-Picture (Chrome / Edge) ----------
+function setRate(rate) {
+  player.rate = Number(rate) || 1;
+  command('setPlaybackRate', [player.rate]);
+  setSegmented($('speed'), player.rate);
+}
 
+/* ---------- Document Picture-in-Picture (Chrome, Edge) ---------- */
 async function openPip() {
   if (!supportsDocPiP || !player.active || player.inPip) return;
-
   let win;
-  try {
-    win = await documentPictureInPicture.requestWindow({ width: 480, height: 270 });
-  } catch (e) {
-    console.warn('Picture-in-picture unavailable:', e);
-    return;
-  }
+  try { win = await documentPictureInPicture.requestWindow({ width: 480, height: 270 }); }
+  catch (e) { toast("Picture in picture isn't available here"); return; }
 
   const doc = win.document;
-  doc.title = player.title || 'CleanTube';
+  doc.title = videoSummary(player.id).title;
   const style = doc.createElement('style');
-  style.textContent = `
-    html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
-    iframe { width: 100%; height: 100%; border: 0; display: block; }
-  `;
+  style.textContent = 'html,body{margin:0;height:100%;background:#000;overflow:hidden}iframe{width:100%;height:100%;border:0;display:block}';
   doc.head.appendChild(style);
 
-  // The PiP window is an about:blank document, so an embed placed directly in
-  // it sends no Referer and YouTube rejects it (error 153). Instead we load
-  // CleanTube itself in "pip mode", which embeds the video from our real URL.
+  // The PiP window is about:blank, which sends no Referer, and YouTube rejects
+  // that (error 153). Loading CleanTube itself in ?pip= mode avoids it.
   const frame = doc.createElement('iframe');
   frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
   frame.allowFullscreen = true;
-  frame.src = pipPageUrl(currentVideoId, player.lastTime, true);
+  frame.src = pipPageUrl(player.id, player.lastTime, true);
   doc.body.appendChild(frame);
-
   win.addEventListener('message', e => {
-    if (e.source !== frame.contentWindow || !e.data || !e.data.cleantubePip) return;
-    handlePlayerEvent(e.data.cleantubePip);
+    if (e.source === frame.contentWindow && e.data?.cleantubePip) handlePlayerEvent(e.data.cleantubePip);
   });
 
-  pipWindow = win;
-  pipIframe = frame;
+  pipWindow = win; pipIframe = frame;
   player.inPip = true;
   ytPlayer.src = 'about:blank';
-  renderPlayer();
-
+  renderPlayerState();
   win.addEventListener('pagehide', onPipClosed, { once: true });
 }
-
 function onPipClosed() {
-  pipWindow = null;
-  pipIframe = null;
+  pipWindow = null; pipIframe = null;
   player.inPip = false;
-
-  if (closingPip) {
-    closingPip = false;
-    renderPlayer();
-    return;
-  }
-
-  // Window closed (X button or "Bring it back"): resume in the page where it left off.
-  ytPlayer.src = buildEmbedUrl(currentVideoId, { start: player.lastTime, autoplay: player.playing });
-  renderPlayer();
+  if (closingPip) { closingPip = false; renderPlayerState(); return; }
+  ytPlayer.src = buildEmbedUrl(player.id, { start: player.lastTime, autoplay: player.playing });
+  renderPlayerState();
 }
 
-function returnFromPip() {
-  if (pipWindow) pipWindow.close();
+/* ===================== Notes ===================== */
+function notesFor(id) { return store.notes[id]?.items || []; }
+
+function renderNotes() {
+  const items = [...notesFor(player.id)].sort((a, b) => a.t - b.t);
+  $('note-list').innerHTML = items.map(n => `
+    <li class="note">
+      <button class="note-time" data-seek="${n.t}" title="Jump to ${clock(n.t)}">${clock(n.t)}</button>
+      <span class="note-text">${esc(n.text)}</span>
+      <button class="icon-btn" data-del-note="${n.at}" aria-label="Delete note"><svg class="icon"><use href="#i-trash"/></svg></button>
+    </li>`).join('');
+  $('notes-empty').hidden = items.length > 0;
+  $('copy-notes').hidden = items.length === 0;
 }
 
-// ---------- Wiring ----------
+function addNote(text) {
+  text = text.trim();
+  if (!text || !player.id) return;
+  const v = videoSummary(player.id);
+  const entry = store.notes[player.id] || (store.notes[player.id] = { ...v, items: [] });
+  entry.title = v.title; entry.channel = v.channel; entry.thumb = v.thumb;
+  entry.items.push({ t: Math.floor(player.lastTime), text, at: Date.now() });
+  entry.updatedAt = new Date().toISOString();
+  save();
+  renderNotes();
+}
+function deleteNote(at) {
+  const entry = store.notes[player.id];
+  if (!entry) return;
+  entry.items = entry.items.filter(n => String(n.at) !== String(at));
+  if (!entry.items.length) delete store.notes[player.id];
+  save();
+  renderNotes();
+}
+async function copyNotes() {
+  const v = videoSummary(player.id);
+  const lines = [`## ${v.title}`, `https://youtu.be/${player.id}`, ''];
+  [...notesFor(player.id)].sort((a, b) => a.t - b.t).forEach(n => {
+    lines.push(`- [${clock(n.t)}](https://youtu.be/${player.id}?t=${n.t}) ${n.text.replace(/\n/g, ' ')}`);
+  });
+  try { await navigator.clipboard.writeText(lines.join('\n')); toast('Notes copied as Markdown'); }
+  catch { toast("Couldn't copy. Your browser blocked clipboard access"); }
+}
 
-openYtBtn.addEventListener('click', () => {
-  window.open(`https://www.youtube.com/watch?v=${currentVideoId}`, '_blank');
-});
+/* ===================== Focus sessions + stats ===================== */
+let focusMinutes = 0;
+const RING = 2 * Math.PI * 9;
 
-backBtn.addEventListener('click', () => {
-  if (player.embedError) {
-    closePlayer();
+function startSession(minutes, intention) {
+  if (!minutes) return;
+  const now = Date.now();
+  store.session = { startedAt: now, endsAt: now + minutes * 60000, minutes, intention };
+  save(true);
+  tickSession();
+  toast(`Focus session started: ${minutes} min`);
+}
+function endSession() {
+  store.session = null;
+  save(true);
+  $('focus-pill').hidden = true;
+  focusMinutes = 0;
+  setSegmented($('focus-choice'), 0);
+}
+function extendSession(min = 10) {
+  if (!store.session) return;
+  store.session.endsAt = Math.max(store.session.endsAt, Date.now()) + min * 60000;
+  store.session.minutes += min;
+  save(true);
+  tickSession();
+}
+function tickSession() {
+  const s = store.session;
+  const pill = $('focus-pill');
+  if (!s) { pill.hidden = true; return; }
+  const left = (s.endsAt - Date.now()) / 1000;
+  if (left <= 0) {
+    command('pauseVideo');
+    $('done-text').textContent = s.intention
+      ? `You gave ${s.minutes} minutes to “${s.intention}”. Nice work.`
+      : `You stayed focused for ${s.minutes} minutes. Nice work.`;
+    endSession();
+    if (!$('done-sheet').open) $('done-sheet').showModal();
     return;
   }
-  minimizePlayer();
-  showResultsArea();
-});
+  pill.hidden = false;
+  $('focus-time').textContent = clock(left);
+  $('focus-label').textContent = s.intention || '';
+  $('focus-ring').style.strokeDashoffset = String(RING * (1 - left / (s.minutes * 60)));
+}
 
-closePlayerBtn.addEventListener('click', closePlayer);
-pipBtn.addEventListener('click', openPip);
-pipReturnBtn.addEventListener('click', returnFromPip);
-miniExpandBtn.addEventListener('click', expandPlayer);
-miniPipBtn.addEventListener('click', openPip);
-miniCloseBtn.addEventListener('click', closePlayer);
+let statTick = 0;
+setInterval(() => {
+  if (PIP_MODE) return;
+  tickSession();
+  if (player.active && player.playing && !document.hidden || (player.inPip && player.playing)) {
+    const k = dayKey();
+    store.stats[k] = (store.stats[k] || 0) + 1;
+    if (++statTick % 15 === 0) save();
+  }
+  if (route.name === 'watch') $('add-note').textContent = `Add at ${clock(player.lastTime)}`;
+}, 1000);
 
-searchBtn.addEventListener('click', () => {
-  const q = searchInput.value.trim();
+function weekSeconds() {
+  let total = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    total += store.stats[dayKey(d)] || 0;
+  }
+  return total;
+}
+
+/* ===================== Library ===================== */
+let libTab = 'saved';
+function libItem(v, sub, extra = '') {
+  return `
+    <li class="lib-item">
+      <button class="lib-open" data-play="${esc(v.id)}">
+        <div class="thumb"><img src="${esc(v.thumb || thumbFor(v.id))}" alt="" loading="lazy"></div>
+        <div class="lib-text"><div class="lib-title">${esc(v.title)}</div><div class="lib-sub">${esc(sub)}</div></div>
+      </button>
+      ${extra}
+    </li>`;
+}
+function renderLibrary() {
+  $('stat-today').textContent = minutesLabel(store.stats[dayKey()] || 0);
+  $('stat-week').textContent = minutesLabel(weekSeconds());
+  const list = $('lib-list'), foot = $('lib-foot');
+  foot.innerHTML = '';
+  let html = '';
+
+  if (libTab === 'saved') {
+    html = store.saved.map(v => libItem(v, v.channel,
+      `<button class="icon-btn" data-unsave="${esc(v.id)}" aria-label="Remove from saved"><svg class="icon"><use href="#i-close"/></svg></button>`)).join('');
+    if (!html) html = `<li class="lib-empty"><strong>Nothing saved yet</strong>Tap the bookmark on any result to keep it here.</li>`;
+  } else if (libTab === 'notes') {
+    const entries = Object.entries(store.notes).sort((a, b) => (b[1].updatedAt || '').localeCompare(a[1].updatedAt || ''));
+    html = entries.map(([id, n]) => libItem({ id, ...n }, `${n.items.length} note${n.items.length === 1 ? '' : 's'}`)).join('');
+    if (!html) html = `<li class="lib-empty"><strong>No notes yet</strong>Notes you write while watching show up here.</li>`;
+  } else {
+    html = store.history.map(v => libItem(v, `${v.channel ? v.channel + ', ' : ''}${ago(v.watchedAt).toLowerCase()}`)).join('');
+    if (!html) html = `<li class="lib-empty"><strong>No history</strong>${store.settings.keepHistory ? 'Videos you watch show up here.' : 'History is turned off in Settings.'}</li>`;
+    else foot.innerHTML = `<button class="btn danger" id="clear-history">Clear history</button>`;
+  }
+  list.innerHTML = html;
+}
+
+/* ===================== Routing ===================== */
+// #/            home
+// #/search?q=   results
+// #/watch?v=    player
+const route = { name: 'home', params: new URLSearchParams() };
+let inAppDepth = 0;
+
+function parseHash() {
+  const h = location.hash.replace(/^#/, '');
+  const [path, qs] = h.split('?');
+  const params = new URLSearchParams(qs || '');
+  if (path === '/search' && params.get('q')) return { name: 'results', params };
+  if (path === '/watch' && /^[\w-]{11}$/.test(params.get('v') || '')) return { name: 'watch', params };
+  return { name: 'home', params };
+}
+function navigate(hash) {
+  if (location.hash === hash) { render(); return; }
+  inAppDepth++;
+  location.hash = hash;
+}
+function goBack() {
+  if (inAppDepth > 0) { inAppDepth--; history.back(); }
+  else navigate(search.query ? `#/search?q=${encodeURIComponent(search.query)}` : '#/');
+}
+
+function render() {
+  Object.assign(route, parseHash());
+  const name = route.name;
+  $('home').hidden = name !== 'home';
+  $('results').hidden = name !== 'results';
+  $('watch').hidden = name !== 'watch';
+  $('toolbar-form').hidden = name === 'home';
+
+  if (name === 'home') {
+    document.title = 'CleanTube';
+    renderRecent();
+    if (player.active) dock();
+  } else if (name === 'results') {
+    const q = route.params.get('q');
+    $('toolbar-input').value = q;
+    if (player.active) dock();
+    runSearch(q);
+  } else if (name === 'watch') {
+    const id = route.params.get('v');
+    $('toolbar-input').value = search.query || '';
+    openVideo(id);
+    window.scrollTo(0, 0);
+  }
+}
+window.addEventListener('hashchange', render);
+
+function submitQuery(raw) {
+  const q = raw.trim();
   if (!q) return;
+  const id = extractVideoId(q);
+  if (focusMinutes && !store.session) startSession(focusMinutes, id ? '' : q);
+  if (id) { play(id); return; }
+  navigate(`#/search?q=${encodeURIComponent(q)}`);
+  document.activeElement?.blur();
+}
+function play(id) {
+  if (store.settings.playback === 'youtube') {
+    addHistory(id);
+    window.open(`https://www.youtube.com/watch?v=${id}`, '_blank', 'noopener');
+    return;
+  }
+  navigate(`#/watch?v=${id}`);
+}
 
-  const openedDirectVideo = openVideoFromInput(q);
-  if (openedDirectVideo) return;
+function renderRecent() {
+  const wrap = $('home-recent');
+  const recent = store.searches.slice(0, 6);
+  wrap.hidden = !recent.length;
+  $('recent-chips').innerHTML = recent.map(q => `<button class="chip" data-query="${esc(q)}">${esc(q)}</button>`).join('');
+}
 
-  currentQuery = q;
-  minimizePlayer();
-  showResultsArea();
-  search(q);
+/* ===================== Settings ===================== */
+function applySettings() {
+  const s = store.settings;
+  document.documentElement.toggleAttribute('data-theme', s.theme !== 'auto');
+  if (s.theme !== 'auto') document.documentElement.dataset.theme = s.theme;
+  document.body.classList.toggle('text-only', s.textOnly);
+  setSegmented($('set-playback'), s.playback);
+  setSegmented($('set-theme'), s.theme);
+  $('set-shorts').checked = s.hideShorts;
+  $('set-textonly').checked = s.textOnly;
+  $('set-history').checked = s.keepHistory;
+}
+function updateSetting(key, value) {
+  store.settings[key] = value;
+  save(true);
+  applySettings();
+  if ((key === 'hideShorts') && route.name === 'results') renderResults();
+  if (key === 'playback' && route.name === 'results') runSearch(search.query);
+}
+
+/* ===================== Events ===================== */
+$('hero-form').addEventListener('submit', e => { e.preventDefault(); submitQuery($('hero-input').value); });
+$('toolbar-form').addEventListener('submit', e => { e.preventDefault(); submitQuery($('toolbar-input').value); });
+bindSegmented($('focus-choice'), v => { focusMinutes = Number(v); if (!focusMinutes && store.session) endSession(); });
+bindSegmented($('length-filter'), v => { search.length = v; runSearch(search.query); });
+bindSegmented($('sort-filter'), v => { search.order = v; runSearch(search.query); });
+bindSegmented($('speed'), setRate);
+bindSegmented($('lib-tabs'), v => { libTab = v; renderLibrary(); });
+bindSegmented($('set-playback'), v => updateSetting('playback', v));
+bindSegmented($('set-theme'), v => updateSetting('theme', v));
+$('set-shorts').addEventListener('change', e => updateSetting('hideShorts', e.target.checked));
+$('set-textonly').addEventListener('change', e => updateSetting('textOnly', e.target.checked));
+$('set-history').addEventListener('change', e => updateSetting('keepHistory', e.target.checked));
+
+// Delegated clicks: play, save, chips, library actions, notes.
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-play],[data-save],[data-query],[data-unsave],[data-seek],[data-del-note],[data-close],#clear-history');
+  if (!t) return;
+  if (t.dataset.play) { if ($('library').open) $('library').close(); play(t.dataset.play); }
+  else if (t.dataset.save) toggleSave(t.dataset.save);
+  else if (t.dataset.unsave) toggleSave(t.dataset.unsave);
+  else if (t.dataset.query) { $('hero-input').value = t.dataset.query; submitQuery(t.dataset.query); }
+  else if (t.dataset.seek) { command('seekTo', [Number(t.dataset.seek), true]); command('playVideo'); }
+  else if (t.dataset.delNote) deleteNote(t.dataset.delNote);
+  else if (t.hasAttribute('data-close')) t.closest('dialog').close();
+  else if (t.id === 'clear-history') { store.history = []; save(true); renderLibrary(); toast('History cleared'); }
 });
 
-searchInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') searchBtn.click();
+$('more-btn').addEventListener('click', () => runSearch(search.query, { more: true }));
+$('back-btn').addEventListener('click', goBack);
+$('close-btn').addEventListener('click', closeVideo);
+$('save-btn').addEventListener('click', () => toggleSave(player.id));
+$('yt-btn').addEventListener('click', () => { command('pauseVideo'); window.open(`https://www.youtube.com/watch?v=${player.id}&t=${Math.floor(player.lastTime)}`, '_blank', 'noopener'); });
+$('error-open-btn').addEventListener('click', () => window.open(`https://www.youtube.com/watch?v=${player.id}`, '_blank', 'noopener'));
+$('pip-btn').addEventListener('click', openPip);
+$('mini-pip').addEventListener('click', openPip);
+$('pip-return-btn').addEventListener('click', () => pipWindow?.close());
+$('mini-expand').addEventListener('click', () => navigate(`#/watch?v=${player.id}`));
+$('mini-close').addEventListener('click', closeVideo);
+$('copy-notes').addEventListener('click', copyNotes);
+$('composer').addEventListener('submit', e => { e.preventDefault(); addNote($('note-input').value); $('note-input').value = ''; });
+$('note-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); $('composer').requestSubmit(); }
 });
 
-usernameInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') signIn();
+$('library-btn').addEventListener('click', () => { renderLibrary(); $('library').showModal(); });
+$('settings-btn').addEventListener('click', () => { applySettings(); $('settings').showModal(); });
+$('focus-pill').addEventListener('click', () => {
+  const s = store.session; if (!s) return;
+  $('focus-sheet-text').textContent = `${clock((s.endsAt - Date.now()) / 1000)} left${s.intention ? ` on “${s.intention}”` : ''}.`;
+  $('focus-sheet').showModal();
+});
+$('focus-extend').addEventListener('click', () => { extendSession(10); $('focus-sheet').close(); toast('Added 10 minutes'); });
+$('focus-end').addEventListener('click', () => { endSession(); $('focus-sheet').close(); toast('Focus session ended'); });
+$('done-break').addEventListener('click', () => { $('done-sheet').close(); if (player.active) closeVideo(); });
+$('done-more').addEventListener('click', () => {
+  $('done-sheet').close();
+  const now = Date.now();
+  store.session = { startedAt: now, endsAt: now + 600000, minutes: 10, intention: search.query || '' };
+  save(true); tickSession(); command('playVideo');
+});
+$('erase-btn').addEventListener('click', () => {
+  if (!confirm('Erase saved videos, notes, history and stats from this browser?')) return;
+  store = defaults(); save(true); applySettings(); renderRecent(); tickSession(); toast('All data erased');
 });
 
-loadMoreBtn.addEventListener('click', () => search(currentQuery, nextPageToken));
-signinBtn.addEventListener('click', signIn);
-signoutBtn.addEventListener('click', signOut);
-historyBtn.addEventListener('click', toggleHistory);
-clearHistoryBtn.addEventListener('click', clearHistory);
+// Close side sheets when clicking the backdrop.
+document.querySelectorAll('dialog.side-sheet').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
 
-modeYoutubeBtn.addEventListener('click', () => setPlaybackMode('youtube'));
-modeEmbedBtn.addEventListener('click', () => setPlaybackMode('embed'));
+document.addEventListener('keydown', e => {
+  if (document.querySelector('dialog[open]')) return;
+  if (e.key === 'k' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); focusSearch(); return; }
+  if (isTyping()) { if (e.key === 'Escape') document.activeElement.blur(); return; }
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if (k === '/') { e.preventDefault(); focusSearch(); }
+  else if (k === 'l') { renderLibrary(); $('library').showModal(); }
+  else if (k === 'escape' && route.name !== 'home') goBack();
+  else if (route.name === 'watch' && k === 'n') { e.preventDefault(); $('note-input').focus(); }
+  else if (route.name === 'watch' && k === 's') toggleSave(player.id);
+});
+function focusSearch() {
+  const input = route.name === 'home' ? $('hero-input') : $('toolbar-input');
+  input.focus(); input.select();
+}
 
-updatePlaybackModeUI();
-updateAuthUI();
+window.addEventListener('pagehide', () => save(true));
+document.addEventListener('visibilitychange', () => { if (document.hidden) save(true); });
 
-// ---------- PiP mode ----------
-// When loaded as ?pip=VIDEO_ID inside the picture-in-picture window, show only
-// a full-window player and relay its playback position to the main page.
+/* ===================== PiP mode ===================== */
+// Loaded as ?pip=VIDEO_ID inside the picture-in-picture window: show only a
+// full-window player and relay its playback position to the main page.
 function startPipMode(params) {
   const id = params.get('pip');
-  if (!/^[a-zA-Z0-9_-]{11}$/.test(id || '')) return;
-
-  document.getElementById('app').style.display = 'none';
+  if (!/^[\w-]{11}$/.test(id || '')) return false;
+  document.body.innerHTML = '';
   document.documentElement.style.cssText = 'height:100%;background:#000';
   document.body.style.cssText = 'margin:0;height:100%;background:#000;overflow:hidden';
 
@@ -1390,17 +1649,26 @@ function startPipMode(params) {
   frame.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:0;display:block';
 
   const target = location.origin && location.origin !== 'null' ? location.origin : '*';
+  const rate = Number(params.get('r')) || 1;
+  let rateSet = rate === 1;
+  const send = (func, args = []) => frame.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), '*');
+  window.ctCommand = send;
   trackPlayer(frame, window, data => {
+    if (!rateSet && data.info?.playerState === 1) { send('setPlaybackRate', [rate]); rateSet = true; }
     try { window.parent.postMessage({ cleantubePip: data }, target); } catch {}
   });
-
-  frame.src = buildEmbedUrl(id, {
-    start: Number(params.get('t')) || 0,
-    autoplay: params.get('a') !== '0'
-  });
+  frame.src = buildEmbedUrl(id, { start: Number(params.get('t')) || 0, autoplay: params.get('a') !== '0' });
   document.body.appendChild(frame);
+  return true;
 }
 
+/* ===================== Boot ===================== */
 const pageParams = new URLSearchParams(location.search);
-if (pageParams.has('pip')) startPipMode(pageParams);
+if (!(pageParams.has('pip') && startPipMode(pageParams))) {
+  applySettings();
+  tickSession();
+  render();
+}
 </script>
+</body>
+</html>
