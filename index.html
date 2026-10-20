@@ -1,4 +1,5 @@
-
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 #app {
@@ -551,6 +552,114 @@
   color: #111;
   border-color: #fff;
 }
+
+/* ---------- Player toolbar, mini player, picture-in-picture ---------- */
+[hidden] { display: none !important; }
+
+#player-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+#player-toolbar #back-btn { margin-bottom: 0; }
+
+.player-btn {
+  background: rgba(255, 255, 255, 0.065);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  color: var(--text);
+  font-size: 13px;
+  padding: 6px 14px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: 0.15s ease;
+}
+
+.player-btn:hover {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+#close-player-btn { margin-left: auto; }
+
+#pip-placeholder {
+  display: none;
+  position: absolute;
+  inset: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: #111;
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+  padding: 2rem;
+}
+
+#mini-bar { display: none; }
+
+#player-section.mini {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  width: min(380px, calc(100vw - 32px));
+  max-width: none;
+  margin: 0;
+  z-index: 1000;
+  background: #141416;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+#player-section.mini #player-toolbar,
+#player-section.mini #video-title { display: none; }
+
+#player-section.mini #player-container {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+#player-section.mini #mini-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+}
+
+#mini-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mini-btn {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.065);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.mini-btn:hover { background: rgba(255, 255, 255, 0.14); }
 </style>
 
 <div id="app">
@@ -607,14 +716,28 @@
 </div>
 
   <div id="player-section">
-    <button id="back-btn"><i class="ti ti-arrow-left" aria-hidden="true"></i> Back to results</button>
+    <div id="player-toolbar">
+      <button id="back-btn" class="player-btn" title="Keeps playing in a mini player">← Back to results</button>
+      <button id="pip-btn" class="player-btn" title="Pop out into an always-on-top window" hidden>⧉ Pop out</button>
+      <button id="close-player-btn" class="player-btn">✕ Close</button>
+    </div>
     <div id="player-container">
       <iframe id="yt-player" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"></iframe>
+      <div id="pip-placeholder">
+        <p>Playing in picture-in-picture</p>
+        <button id="pip-return-btn" class="player-btn">Bring it back</button>
+      </div>
       <div id="player-error">
         <i class="ti ti-player-play" style="font-size:32px; color:#555;" aria-hidden="true"></i>
         <p>This video can't be embedded — the creator has disabled it.<br>Open it on YouTube instead.</p>
         <button id="open-yt-btn"><i class="ti ti-brand-youtube" aria-hidden="true"></i> Open on YouTube</button>
       </div>
+    </div>
+    <div id="mini-bar">
+      <span id="mini-title"></span>
+      <button id="mini-expand-btn" class="mini-btn" title="Expand">⤢</button>
+      <button id="mini-pip-btn" class="mini-btn" title="Pop out" hidden>⧉</button>
+      <button id="mini-close-btn" class="mini-btn" title="Close">✕</button>
     </div>
     <div id="video-title"></div>
   </div>
@@ -658,6 +781,31 @@ const welcomeText = document.getElementById('welcome-text');
 const historySection = document.getElementById('history-section');
 const watchHistoryEl = document.getElementById('watch-history');
 const searchHistoryEl = document.getElementById('search-history');
+const loadMoreWrap = document.getElementById('load-more-wrap');
+const pipBtn = document.getElementById('pip-btn');
+const closePlayerBtn = document.getElementById('close-player-btn');
+const pipPlaceholder = document.getElementById('pip-placeholder');
+const pipReturnBtn = document.getElementById('pip-return-btn');
+const miniTitleEl = document.getElementById('mini-title');
+const miniExpandBtn = document.getElementById('mini-expand-btn');
+const miniPipBtn = document.getElementById('mini-pip-btn');
+const miniCloseBtn = document.getElementById('mini-close-btn');
+
+// Player state. layout is where the in-page player sits; inPip means the
+// video currently lives in a Document Picture-in-Picture window instead.
+const supportsDocPiP = 'documentPictureInPicture' in window;
+const player = {
+  active: false,
+  layout: 'full', // 'full' | 'mini'
+  inPip: false,
+  embedError: false,
+  title: '',
+  lastTime: 0,
+  playing: false
+};
+let pipWindow = null;
+let pipIframe = null;
+let closingPip = false;
 
 
 const STORAGE_KEYS = {
@@ -827,8 +975,7 @@ function renderHistory() {
         searchInput.value = item.query;
         historySection.style.display = 'none';
         currentQuery = item.query;
-        playerSection.style.display = 'none';
-        ytPlayer.src = '';
+        minimizePlayer();
         resultsEl.style.display = 'grid';
         document.getElementById('load-more-wrap').style.display = 'block';
         search(item.query);
@@ -848,10 +995,9 @@ function toggleHistory() {
     return;
   }
 
-  playerSection.style.display = 'none';
-  ytPlayer.src = '';
+  minimizePlayer();
   resultsEl.style.display = 'none';
-  document.getElementById('load-more-wrap').style.display = 'none';
+  loadMoreWrap.style.display = 'none';
 
   renderHistory();
   historySection.style.display = 'block';
@@ -930,6 +1076,131 @@ function renderResults(items) {
   });
 }
 
+// ---------- Embed URL + playback position tracking ----------
+
+function buildEmbedUrl(id, { start = 0, autoplay = true } = {}) {
+  const params = new URLSearchParams({
+    autoplay: autoplay ? '1' : '0',
+    rel: '0',
+    modestbranding: '1',
+    enablejsapi: '1',
+    playsinline: '1'
+  });
+  if (start > 0) params.set('start', String(Math.floor(start)));
+  if (location.origin && location.origin !== 'null') params.set('origin', location.origin);
+  return `https://www.youtube.com/embed/${id}?${params}`;
+}
+
+// The YouTube embed reports its current time and state over postMessage once
+// we say we're listening. We use that to resume at the same spot when the
+// video moves in or out of the picture-in-picture window.
+function trackPlayer(iframe, win, onEvent) {
+  let heardBack = false;
+  let pinger = null;
+
+  win.addEventListener('message', e => {
+    if (e.source !== iframe.contentWindow) return;
+    let data;
+    try { data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch { return; }
+    if (!data || !data.event) return;
+    heardBack = true;
+    onEvent(data);
+  });
+
+  iframe.addEventListener('load', () => {
+    heardBack = false;
+    clearInterval(pinger);
+    let tries = 0;
+    pinger = setInterval(() => {
+      if (heardBack || ++tries > 20) return clearInterval(pinger);
+      try {
+        iframe.contentWindow?.postMessage(JSON.stringify({ event: 'listening', id: 1, channel: 'widget' }), '*');
+      } catch {}
+    }, 250);
+  });
+}
+
+function handlePlayerEvent(data) {
+  if (data.info && typeof data.info === 'object') {
+    if (typeof data.info.currentTime === 'number') player.lastTime = data.info.currentTime;
+    if (typeof data.info.playerState === 'number') player.playing = data.info.playerState === 1;
+  }
+  if (data.event === 'onStateChange' && typeof data.info === 'number') {
+    player.playing = data.info === 1;
+  }
+}
+
+trackPlayer(ytPlayer, window, data => {
+  if (player.inPip) return;
+  handlePlayerEvent(data);
+  // 101 / 150 = owner disabled embedding, 100 = video not found
+  if (data.event === 'onError' && [100, 101, 150].includes(data.info)) showEmbedError();
+});
+
+// ---------- Layout ----------
+
+function renderPlayer() {
+  const showSection = player.active && !(player.inPip && player.layout === 'mini');
+  playerSection.style.display = showSection ? 'block' : 'none';
+  playerSection.classList.toggle('mini', player.layout === 'mini');
+
+  pipPlaceholder.style.display = player.inPip ? 'flex' : 'none';
+  ytPlayer.style.display = player.inPip || player.embedError ? 'none' : 'block';
+  if (player.inPip) playerError.style.display = 'none';
+
+  const canPip = supportsDocPiP && player.active && !player.inPip && !player.embedError;
+  pipBtn.hidden = !canPip;
+  miniPipBtn.hidden = !canPip;
+
+  videoTitleEl.textContent = player.title;
+  miniTitleEl.textContent = player.title;
+}
+
+function showResultsArea() {
+  resultsEl.style.display = 'grid';
+  loadMoreWrap.style.display = 'block';
+}
+
+function hideResultsArea() {
+  resultsEl.style.display = 'none';
+  loadMoreWrap.style.display = 'none';
+  historySection.style.display = 'none';
+  statusEl.textContent = '';
+}
+
+// Shrink to the corner instead of stopping, so the video keeps playing
+// while you search or browse history.
+function minimizePlayer() {
+  if (!player.active) return;
+  player.layout = 'mini';
+  renderPlayer();
+}
+
+function expandPlayer() {
+  if (!player.active) return;
+  player.layout = 'full';
+  hideResultsArea();
+  renderPlayer();
+  window.scrollTo(0, 0);
+}
+
+function closePlayer() {
+  if (pipWindow) {
+    closingPip = true;
+    pipWindow.close();
+  }
+  player.active = false;
+  player.inPip = false;
+  player.embedError = false;
+  ytPlayer.src = 'about:blank';
+  playerError.style.display = 'none';
+  player.layout = 'full';
+  renderPlayer();
+  if (historySection.style.display !== 'block') showResultsArea();
+}
+
+// ---------- Playback ----------
+
 function playVideo(id, title, thumb = '', channel = '') {
   currentVideoId = id;
 
@@ -945,46 +1216,115 @@ function playVideo(id, title, thumb = '', channel = '') {
     return;
   }
 
-  historySection.style.display = 'none';
+  player.active = true;
+  player.title = title;
+  player.lastTime = 0;
+  player.playing = true;
+  player.embedError = false;
   playerError.style.display = 'none';
-  ytPlayer.style.display = 'block';
-  ytPlayer.src = `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1`;
-  videoTitleEl.textContent = title;
-  playerSection.style.display = 'block';
-  resultsEl.style.display = 'none';
-  document.getElementById('load-more-wrap').style.display = 'none';
-  statusEl.textContent = '';
-  window.scrollTo(0, 0);
 
-  ytPlayer.onload = () => {
-    try {
-      const doc = ytPlayer.contentDocument || ytPlayer.contentWindow?.document;
-      if (doc && (doc.title.includes('Error') || doc.body?.innerHTML?.includes('errorcode'))) {
-        showEmbedError();
-      }
-    } catch(e) {
-      // cross-origin — can't inspect, assume fine
-    }
-  };
+  if (player.inPip && pipIframe) {
+    // Already popped out: swap the video in the PiP window, leave the page alone.
+    pipIframe.src = buildEmbedUrl(id);
+    pipWindow.document.title = title;
+    renderPlayer();
+    return;
+  }
+
+  ytPlayer.src = buildEmbedUrl(id);
+  player.layout = 'full';
+  hideResultsArea();
+  renderPlayer();
+  window.scrollTo(0, 0);
 }
 
 function showEmbedError() {
-  ytPlayer.style.display = 'none';
+  player.embedError = true;
   playerError.style.display = 'flex';
+  // An unembeddable video in the corner is useless, so bring it up front.
+  if (player.layout === 'mini') expandPlayer();
+  else renderPlayer();
 }
+
+// ---------- Document Picture-in-Picture (Chrome / Edge) ----------
+
+async function openPip() {
+  if (!supportsDocPiP || !player.active || player.inPip) return;
+
+  let win;
+  try {
+    win = await documentPictureInPicture.requestWindow({ width: 480, height: 270 });
+  } catch (e) {
+    console.warn('Picture-in-picture unavailable:', e);
+    return;
+  }
+
+  const doc = win.document;
+  doc.title = player.title || 'CleanTube';
+  const style = doc.createElement('style');
+  style.textContent = `
+    html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+    iframe { width: 100%; height: 100%; border: 0; display: block; }
+  `;
+  doc.head.appendChild(style);
+
+  const frame = doc.createElement('iframe');
+  frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+  frame.allowFullscreen = true;
+  trackPlayer(frame, win, handlePlayerEvent);
+  frame.src = buildEmbedUrl(currentVideoId, { start: player.lastTime, autoplay: true });
+  doc.body.appendChild(frame);
+
+  pipWindow = win;
+  pipIframe = frame;
+  player.inPip = true;
+  ytPlayer.src = 'about:blank';
+  renderPlayer();
+
+  win.addEventListener('pagehide', onPipClosed, { once: true });
+}
+
+function onPipClosed() {
+  pipWindow = null;
+  pipIframe = null;
+  player.inPip = false;
+
+  if (closingPip) {
+    closingPip = false;
+    renderPlayer();
+    return;
+  }
+
+  // Window closed (X button or "Bring it back"): resume in the page where it left off.
+  ytPlayer.src = buildEmbedUrl(currentVideoId, { start: player.lastTime, autoplay: player.playing });
+  renderPlayer();
+}
+
+function returnFromPip() {
+  if (pipWindow) pipWindow.close();
+}
+
+// ---------- Wiring ----------
 
 openYtBtn.addEventListener('click', () => {
   window.open(`https://www.youtube.com/watch?v=${currentVideoId}`, '_blank');
 });
 
 backBtn.addEventListener('click', () => {
-  playerSection.style.display = 'none';
-  ytPlayer.src = '';
-  playerError.style.display = 'none';
-  ytPlayer.style.display = 'block';
-  resultsEl.style.display = 'grid';
-  document.getElementById('load-more-wrap').style.display = 'block';
+  if (player.embedError) {
+    closePlayer();
+    return;
+  }
+  minimizePlayer();
+  showResultsArea();
 });
+
+closePlayerBtn.addEventListener('click', closePlayer);
+pipBtn.addEventListener('click', openPip);
+pipReturnBtn.addEventListener('click', returnFromPip);
+miniExpandBtn.addEventListener('click', expandPlayer);
+miniPipBtn.addEventListener('click', openPip);
+miniCloseBtn.addEventListener('click', closePlayer);
 
 searchBtn.addEventListener('click', () => {
   const q = searchInput.value.trim();
@@ -994,10 +1334,8 @@ searchBtn.addEventListener('click', () => {
   if (openedDirectVideo) return;
 
   currentQuery = q;
-  playerSection.style.display = 'none';
-  ytPlayer.src = '';
-  resultsEl.style.display = 'grid';
-  document.getElementById('load-more-wrap').style.display = 'block';
+  minimizePlayer();
+  showResultsArea();
   search(q);
 });
 
@@ -1020,5 +1358,4 @@ modeEmbedBtn.addEventListener('click', () => setPlaybackMode('embed'));
 
 updatePlaybackModeUI();
 updateAuthUI();
-</script>
 </script>
