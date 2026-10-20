@@ -722,7 +722,7 @@
       <button id="close-player-btn" class="player-btn">✕ Close</button>
     </div>
     <div id="player-container">
-      <iframe id="yt-player" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"></iframe>
+      <iframe id="yt-player" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin"></iframe>
       <div id="pip-placeholder">
         <p>Playing in picture-in-picture</p>
         <button id="pip-return-btn" class="player-btn">Bring it back</button>
@@ -1091,6 +1091,12 @@ function buildEmbedUrl(id, { start = 0, autoplay = true } = {}) {
   return `https://www.youtube.com/embed/${id}?${params}`;
 }
 
+// URL of this same page in "pip mode" (see startPipMode at the bottom).
+function pipPageUrl(id, start = 0, autoplay = true) {
+  const base = location.href.split(/[?#]/)[0];
+  return `${base}?pip=${encodeURIComponent(id)}&t=${Math.floor(start)}&a=${autoplay ? 1 : 0}`;
+}
+
 // The YouTube embed reports its current time and state over postMessage once
 // we say we're listening. We use that to resume at the same spot when the
 // video moves in or out of the picture-in-picture window.
@@ -1225,7 +1231,7 @@ function playVideo(id, title, thumb = '', channel = '') {
 
   if (player.inPip && pipIframe) {
     // Already popped out: swap the video in the PiP window, leave the page alone.
-    pipIframe.src = buildEmbedUrl(id);
+    pipIframe.src = pipPageUrl(id, 0, true);
     pipWindow.document.title = title;
     renderPlayer();
     return;
@@ -1268,12 +1274,19 @@ async function openPip() {
   `;
   doc.head.appendChild(style);
 
+  // The PiP window is an about:blank document, so an embed placed directly in
+  // it sends no Referer and YouTube rejects it (error 153). Instead we load
+  // CleanTube itself in "pip mode", which embeds the video from our real URL.
   const frame = doc.createElement('iframe');
   frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
   frame.allowFullscreen = true;
-  trackPlayer(frame, win, handlePlayerEvent);
-  frame.src = buildEmbedUrl(currentVideoId, { start: player.lastTime, autoplay: true });
+  frame.src = pipPageUrl(currentVideoId, player.lastTime, true);
   doc.body.appendChild(frame);
+
+  win.addEventListener('message', e => {
+    if (e.source !== frame.contentWindow || !e.data || !e.data.cleantubePip) return;
+    handlePlayerEvent(e.data.cleantubePip);
+  });
 
   pipWindow = win;
   pipIframe = frame;
@@ -1358,4 +1371,36 @@ modeEmbedBtn.addEventListener('click', () => setPlaybackMode('embed'));
 
 updatePlaybackModeUI();
 updateAuthUI();
+
+// ---------- PiP mode ----------
+// When loaded as ?pip=VIDEO_ID inside the picture-in-picture window, show only
+// a full-window player and relay its playback position to the main page.
+function startPipMode(params) {
+  const id = params.get('pip');
+  if (!/^[a-zA-Z0-9_-]{11}$/.test(id || '')) return;
+
+  document.getElementById('app').style.display = 'none';
+  document.documentElement.style.cssText = 'height:100%;background:#000';
+  document.body.style.cssText = 'margin:0;height:100%;background:#000;overflow:hidden';
+
+  const frame = document.createElement('iframe');
+  frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+  frame.allowFullscreen = true;
+  frame.referrerPolicy = 'strict-origin-when-cross-origin';
+  frame.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:0;display:block';
+
+  const target = location.origin && location.origin !== 'null' ? location.origin : '*';
+  trackPlayer(frame, window, data => {
+    try { window.parent.postMessage({ cleantubePip: data }, target); } catch {}
+  });
+
+  frame.src = buildEmbedUrl(id, {
+    start: Number(params.get('t')) || 0,
+    autoplay: params.get('a') !== '0'
+  });
+  document.body.appendChild(frame);
+}
+
+const pageParams = new URLSearchParams(location.search);
+if (pageParams.has('pip')) startPipMode(pageParams);
 </script>
