@@ -98,6 +98,7 @@ body {
 button, input, textarea, select { font: inherit; color: inherit; letter-spacing: inherit; }
 button { cursor: pointer; background: none; border: 0; padding: 0; }
 img { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
 [hidden] { display: none !important; }
 :focus { outline: none; }
 :focus-visible { outline: 3px solid var(--accent-soft); outline-offset: 2px; box-shadow: 0 0 0 1.5px var(--accent); }
@@ -120,6 +121,7 @@ img { display: block; max-width: 100%; }
 .btn.plain:hover { background: var(--accent-soft); }
 .btn.danger { color: var(--danger); }
 .btn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.btn:disabled, .icon-btn:disabled { opacity: 0.38; pointer-events: none; }
 
 .icon-btn {
   width: 34px; height: 34px; border-radius: 999px;
@@ -287,7 +289,7 @@ kbd {
 .result-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .result {
   position: relative;
-  display: grid; grid-template-columns: 1fr auto; align-items: start; gap: 8px;
+  display: grid; grid-template-columns: 248px minmax(0, 1fr) auto; align-items: start; column-gap: 18px;
   padding: 14px 10px; margin: 0 -10px;
   border-radius: 18px;
   transition: background 0.2s var(--ease);
@@ -298,10 +300,18 @@ kbd {
 }
 .result:hover::before, .result:hover + .result::before { opacity: 0; }
 @media (hover: hover) { .result:hover { background: var(--surface); } }
-.result-main {
-  display: grid; grid-template-columns: 248px 1fr; gap: 18px; align-items: start;
-  text-align: left; min-width: 0; border-radius: 12px;
-}
+/* The title link stretches over the whole row; channel links and buttons sit above it. */
+.stretch::after { content: ""; position: absolute; inset: 0; border-radius: 18px; }
+.stretch:focus-visible { outline: none; box-shadow: none; }
+.stretch:focus-visible::after { box-shadow: 0 0 0 2px var(--accent), 0 0 0 5px var(--accent-soft); }
+.result .icon-btn, .result .btn, .channel-link { position: relative; z-index: 1; }
+.channel-link { border-radius: 4px; transition: color 0.2s var(--ease); }
+.channel-link:hover { color: var(--accent); }
+.avatar { border-radius: 50%; object-fit: cover; background: var(--fill); flex: none; }
+.result.channel-row { grid-template-columns: 72px minmax(0, 1fr) auto; align-items: center; }
+.channel-row .avatar { width: 72px; height: 72px; }
+.stack { position: relative; padding-top: 7px; }
+.stack::before { content: ""; position: absolute; top: 0; left: 12px; right: 12px; height: 16px; border-radius: 10px; background: var(--fill-2); }
 .thumb {
   position: relative; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden;
   background: var(--fill);
@@ -327,14 +337,65 @@ kbd {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   max-width: 64ch;
 }
-body.text-only .result-main { grid-template-columns: 1fr; }
-body.text-only .thumb { display: none; }
+body.text-only .result:not(.channel-row) { grid-template-columns: minmax(0, 1fr) auto; }
+body.text-only .thumb, body.text-only .stack { display: none; }
 body.text-only .meta .inline-duration { display: inline; }
 body.text-only .result { padding: 12px 10px; }
 
 .list-footer { display: flex; justify-content: center; padding: 28px 0 0; }
 .status { padding: 56px 0; text-align: center; color: var(--ink-2); }
 .status strong { display: block; color: var(--ink); font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+
+/* ---------- Channel + playlist ---------- */
+.channel-head {
+  display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 22px; align-items: center;
+  padding: 36px 0 22px;
+}
+.channel-head .avatar { width: 96px; height: 96px; }
+.channel-title {
+  font-family: var(--font-display); font-size: 34px; font-weight: 700; line-height: 1.1;
+  letter-spacing: -0.035em; margin: 0 0 6px; text-wrap: balance;
+}
+.channel-head.loading .channel-title { width: min(260px, 100%); height: 34px; border-radius: 8px; background: var(--fill); }
+.channel-desc {
+  margin: 10px 0 0; max-width: 68ch; font-size: 14px; color: var(--ink-2); white-space: pre-line;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.channel-desc.open { display: block; }
+.channel-desc:empty { display: none; }
+.desc-toggle { height: 26px; margin: 2px 0 0 -8px; font-size: 13px; }
+.channel-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  padding: 0 0 16px; margin-bottom: 4px; border-bottom: 0.5px solid var(--hair);
+}
+.channel-search { position: relative; margin-left: auto; width: min(280px, 100%); }
+.channel-search .icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--ink-2); }
+.channel-search input { width: 100%; height: 32px; padding: 0 10px 0 31px; background: var(--fill); border: 0; border-radius: 9px; font-size: 14px; }
+.channel-search input::placeholder { color: var(--ink-2); }
+.channel-search input:focus { background: var(--surface); box-shadow: 0 0 0 3.5px var(--accent-soft), 0 0 0 1px var(--accent); }
+.playlist-head {
+  display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+  padding: 32px 0 18px; margin-bottom: 4px; border-bottom: 0.5px solid var(--hair);
+}
+.playlist-info { min-width: 0; }
+/* On a channel's own page, its name on every row is redundant. */
+#channel-list .channel-link { display: none; }
+
+.queue {
+  display: flex; align-items: center; gap: 12px;
+  margin: 0 0 16px; padding: 8px 8px 8px 14px;
+  background: var(--surface); border-radius: 14px; box-shadow: 0 0 0 0.5px var(--hair);
+  font-size: 14px;
+}
+.queue-title { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 4px; }
+.queue-title:hover { color: var(--accent); }
+.queue-pos { color: var(--ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.queue-nav { margin-left: auto; display: flex; align-items: center; gap: 4px; flex: none; }
+
+.chip.with-avatar { display: inline-flex; align-items: center; gap: 8px; padding: 0 14px 0 4px; }
+.chip.with-avatar img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; background: var(--fill); }
+.lib-open.is-channel { grid-template-columns: 48px 1fr; }
+.lib-open.is-channel .avatar { width: 48px; height: 48px; }
 
 .skeleton .thumb, .skeleton .bar {
   background: linear-gradient(90deg, var(--fill) 0%, var(--fill-2) 50%, var(--fill) 100%);
@@ -511,7 +572,16 @@ dialog[open] { animation: rise 0.4s var(--ease); }
   .brand-name { display: none; }
   .focus-pill .label { display: none; }
   main { padding: 0 16px 96px; }
-  .result-main { grid-template-columns: 136px 1fr; gap: 12px; }
+  .result { grid-template-columns: 136px minmax(0, 1fr) auto; column-gap: 12px; }
+  .result.channel-row { grid-template-columns: 56px minmax(0, 1fr); }
+  .channel-row .avatar { width: 56px; height: 56px; }
+  .channel-row .follow { grid-column: 2; justify-self: start; margin-top: 8px; }
+  .channel-head { grid-template-columns: 64px minmax(0, 1fr); gap: 14px; padding: 24px 0 18px; }
+  .channel-head .avatar { width: 64px; height: 64px; }
+  .channel-head .follow { grid-column: 1 / -1; height: 40px; }
+  .channel-title { font-size: 26px; }
+  .channel-search { margin-left: 0; width: 100%; }
+  .playlist-head { padding: 22px 0 16px; }
   .result-title { font-size: 15px; }
   .result-desc { display: none; }
   #hero-input { height: 60px; font-size: 18px; padding: 0 16px 0 50px; border-radius: 18px; }
@@ -528,7 +598,7 @@ dialog[open] { animation: rise 0.4s var(--ease); }
   .toast { white-space: nowrap; max-width: calc(100vw - 32px); overflow: hidden; text-overflow: ellipsis; }
 }
 @media (max-width: 420px) {
-  .result-main { grid-template-columns: 120px 1fr; }
+  .result:not(.channel-row) { grid-template-columns: 120px minmax(0, 1fr) auto; }
   .results-head h1 { font-size: 24px; }
 }
 
@@ -544,6 +614,7 @@ dialog[open] { animation: rise 0.4s var(--ease); }
   <symbol id="i-books" viewBox="0 0 24 24"><path d="M3.5 4.5h4v15h-4zM9.5 4.5h4v15h-4zM15.2 5.6l3.6-1 3.4 14-3.6 1z"/></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
   <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
   <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
   <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6.5 3.5h11v17l-5.5-4-5.5 4z"/></symbol>
   <symbol id="i-pip" viewBox="0 0 24 24"><rect x="2.5" y="4.5" width="19" height="15" rx="3"/><rect x="12" y="11.5" width="7" height="5" rx="1.2" fill="currentColor" stroke="none"/></symbol>
@@ -588,7 +659,7 @@ dialog[open] { animation: rise 0.4s var(--ease); }
       <form id="hero-form" class="hero-field" role="search">
         <svg class="icon"><use href="#i-search"/></svg>
         <label for="hero-input" class="sr-only">Search YouTube or paste a video link</label>
-        <input id="hero-input" type="search" placeholder="Search, or paste a video link" autocomplete="off" enterkeyhint="search" autofocus>
+        <input id="hero-input" type="search" placeholder="Search, or paste a YouTube link" autocomplete="off" enterkeyhint="search" autofocus>
         <button class="btn primary" type="submit">Search</button>
       </form>
 
@@ -600,6 +671,11 @@ dialog[open] { animation: rise 0.4s var(--ease); }
           <button type="button" role="radio" data-min="50" aria-checked="false">50 min</button>
           <button type="button" role="radio" data-min="90" aria-checked="false">90 min</button>
         </div>
+      </div>
+
+      <div id="home-channels" class="home-recent" hidden>
+        <h2>Your channels</h2>
+        <div id="channel-chips" class="chips"></div>
       </div>
 
       <div id="home-recent" class="home-recent" hidden>
@@ -616,6 +692,10 @@ dialog[open] { animation: rise 0.4s var(--ease); }
     <div class="results-head">
       <h1 id="results-title">Results</h1>
       <div class="filters">
+        <div class="segmented" role="radiogroup" aria-label="Result type" id="type-filter">
+          <button type="button" role="radio" data-v="video" aria-checked="true">Videos</button>
+          <button type="button" role="radio" data-v="channel" aria-checked="false">Channels</button>
+        </div>
         <div class="segmented" role="radiogroup" aria-label="Video length" id="length-filter">
           <button type="button" role="radio" data-v="any" aria-checked="true">Any length</button>
           <button type="button" role="radio" data-v="short" aria-checked="false">Under 4 min</button>
@@ -631,6 +711,52 @@ dialog[open] { animation: rise 0.4s var(--ease); }
     <ul id="result-list" class="result-list"></ul>
     <div id="results-status" class="status" hidden></div>
     <div class="list-footer"><button id="more-btn" class="btn" hidden>Show more results</button></div>
+  </section>
+
+  <!-- Channel -->
+  <section id="channel" class="view" hidden aria-labelledby="channel-title">
+    <div id="channel-head" class="channel-head">
+      <img id="channel-avatar" class="avatar" alt="" width="96" height="96">
+      <div class="channel-info">
+        <h1 id="channel-title" class="channel-title"></h1>
+        <div id="channel-meta" class="meta"></div>
+        <p id="channel-desc" class="channel-desc"></p>
+        <button id="desc-toggle" class="btn plain desc-toggle" hidden>More</button>
+      </div>
+      <button id="follow-btn" class="btn primary follow" hidden>Follow</button>
+    </div>
+    <div class="channel-bar">
+      <div class="segmented" role="radiogroup" aria-label="Channel section" id="channel-tabs">
+        <button type="button" role="radio" data-v="videos" aria-checked="true">Videos</button>
+        <button type="button" role="radio" data-v="playlists" aria-checked="false">Playlists</button>
+      </div>
+      <div class="segmented" role="radiogroup" aria-label="Sort videos" id="channel-sort">
+        <button type="button" role="radio" data-v="newest" aria-checked="true">Newest</button>
+        <button type="button" role="radio" data-v="popular" aria-checked="false">Popular</button>
+      </div>
+      <form id="channel-search" class="channel-search" role="search">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <label for="channel-q" class="sr-only">Search this channel</label>
+        <input id="channel-q" type="search" placeholder="Search this channel" autocomplete="off" enterkeyhint="search">
+      </form>
+    </div>
+    <ul id="channel-list" class="result-list"></ul>
+    <div id="channel-status" class="status" hidden></div>
+    <div class="list-footer"><button id="channel-more" class="btn" hidden>Show more</button></div>
+  </section>
+
+  <!-- Playlist -->
+  <section id="playlist" class="view" hidden aria-labelledby="playlist-title">
+    <div class="playlist-head">
+      <div class="playlist-info">
+        <h1 id="playlist-title" class="channel-title"></h1>
+        <div id="playlist-meta" class="meta"></div>
+      </div>
+      <button id="playlist-play" class="btn primary" hidden><svg class="icon"><use href="#i-play"/></svg>Play all</button>
+    </div>
+    <ul id="playlist-list" class="result-list"></ul>
+    <div id="playlist-status" class="status" hidden></div>
+    <div class="list-footer"><button id="playlist-more" class="btn" hidden>Show more</button></div>
   </section>
 
   <!-- Watch -->
@@ -663,6 +789,14 @@ dialog[open] { animation: rise 0.4s var(--ease); }
         </div>
 
         <div class="watch-meta">
+          <div id="queue-bar" class="queue" hidden>
+            <a id="queue-title" class="queue-title" href="#/"></a>
+            <span id="queue-pos" class="queue-pos"></span>
+            <span class="queue-nav">
+              <button id="queue-prev" class="icon-btn" aria-label="Previous video" title="Previous"><svg class="icon"><use href="#i-back"/></svg></button>
+              <button id="queue-next" class="btn">Next<svg class="icon"><use href="#i-next"/></svg></button>
+            </span>
+          </div>
           <h1 id="watch-title" class="watch-title"></h1>
           <div class="meta" id="watch-sub"></div>
           <div class="watch-actions">
@@ -715,6 +849,7 @@ dialog[open] { animation: rise 0.4s var(--ease); }
     </div>
     <div class="segmented" role="radiogroup" aria-label="Library section" id="lib-tabs">
       <button type="button" role="radio" data-v="saved" aria-checked="true">Saved</button>
+      <button type="button" role="radio" data-v="channels" aria-checked="false">Channels</button>
       <button type="button" role="radio" data-v="notes" aria-checked="false">Notes</button>
       <button type="button" role="radio" data-v="history" aria-checked="false">History</button>
     </div>
@@ -774,6 +909,7 @@ dialog[open] { animation: rise 0.4s var(--ease); }
       <div class="shortcut-row"><span>Search</span><span><kbd>/</kbd></span></div>
       <div class="shortcut-row"><span>Write a note</span><span><kbd>N</kbd></span></div>
       <div class="shortcut-row"><span>Save video</span><span><kbd>S</kbd></span></div>
+      <div class="shortcut-row"><span>Follow channel</span><span><kbd>F</kbd></span></div>
       <div class="shortcut-row"><span>Open library</span><span><kbd>L</kbd></span></div>
       <div class="shortcut-row"><span>Go back</span><span><kbd>Esc</kbd></span></div>
     </div>
@@ -827,6 +963,7 @@ const defaults = () => ({
   searches: [],   // [query]
   notes: {},      // {videoId: {title, channel, thumb, items:[{t,text,at}]}}
   stats: {},      // {'YYYY-MM-DD': seconds}
+  channels: [],   // followed: [{id,title,handle,thumb,followedAt}]
   session: null   // {startedAt, endsAt, minutes, intention}
 });
 
@@ -946,7 +1083,8 @@ function setSegmented(el, value) {
 const videoCache = new Map(); // id -> {id,title,channel,thumb,published,duration,desc}
 
 async function api(path, params) {
-  const url = `https://www.googleapis.com/youtube/v3/${path}?${new URLSearchParams({ ...params, key: API_KEY })}`;
+  const clean = Object.fromEntries(Object.entries({ ...params, key: API_KEY }).filter(([, v]) => v !== undefined && v !== null && v !== ''));
+  const url = `https://www.googleapis.com/youtube/v3/${path}?${new URLSearchParams(clean)}`;
   const res = await fetch(url);
   const data = await res.json();
   if (data.error) throw new Error(data.error.message || 'YouTube returned an error');
@@ -957,7 +1095,7 @@ async function fetchDetails(ids) {
   const missing = ids.filter(id => !videoCache.get(id)?.durationKnown);
   if (!missing.length) return;
   try {
-    const data = await api('videos', { part: 'snippet,contentDetails', id: missing.join(','), maxResults: 50 });
+    const data = await api('videos', { part: 'snippet,contentDetails,status', id: missing.join(','), maxResults: 50 });
     for (const v of data.items || []) {
       const prev = videoCache.get(v.id) || {};
       videoCache.set(v.id, {
@@ -965,66 +1103,75 @@ async function fetchDetails(ids) {
         id: v.id,
         title: decode(v.snippet.title),
         channel: v.snippet.channelTitle,
+        channelId: v.snippet.channelId,
         thumb: v.snippet.thumbnails?.medium?.url || thumbFor(v.id),
         published: v.snippet.publishedAt,
         desc: prev.desc ?? decode(v.snippet.description || '').slice(0, 220),
         duration: parseISODuration(v.contentDetails?.duration),
-        durationKnown: true
+        durationKnown: true,
+        embeddable: v.status ? v.status.embeddable !== false : prev.embeddable
       });
     }
   } catch {}
 }
 
 /* ===================== Search ===================== */
-const search = { query: '', length: 'any', order: 'relevance', items: [], next: '', key: '', loading: false };
+const search = { query: '', type: 'video', length: 'any', order: 'relevance', items: [], next: '', key: '', loading: false };
+const sentence = s => /[.!?]$/.test(s) ? s : `${s}.`;
+
+function ingestSearchVideos(items) {
+  const ids = [];
+  for (const item of items || []) {
+    const id = item.id?.videoId;
+    if (!id) continue;
+    ids.push(id);
+    const prev = videoCache.get(id) || {};
+    videoCache.set(id, {
+      ...prev, id,
+      title: decode(item.snippet.title),
+      channel: item.snippet.channelTitle,
+      channelId: item.snippet.channelId,
+      thumb: item.snippet.thumbnails?.medium?.url || thumbFor(id),
+      published: item.snippet.publishedAt,
+      desc: decode(item.snippet.description || '')
+    });
+  }
+  return ids;
+}
 
 async function runSearch(query, { more = false } = {}) {
-  const key = `${query}|${search.length}|${search.order}|${store.settings.playback}`;
+  const key = `${query}|${search.type}|${search.length}|${search.order}|${store.settings.playback}`;
   if (!more && key === search.key && search.items.length) { renderResults(); return; }
-  if (search.loading) return;
+  if (more && search.loading) return;
 
   if (!more) {
     search.query = query; search.key = key; search.items = []; search.next = '';
-    renderSkeleton();
+    renderResultsSkeleton();
     rememberSearch(query);
   }
   search.loading = true;
   $('more-btn').disabled = true;
 
-  const params = {
-    part: 'snippet', type: 'video', maxResults: 15, q: query,
-    order: search.order, videoDuration: search.length, safeSearch: 'moderate'
-  };
-  if (store.settings.playback === 'embed') params.videoEmbeddable = 'true';
-  if (more && search.next) params.pageToken = search.next;
+  const isChannel = search.type === 'channel';
+  const params = { part: 'snippet', type: search.type, maxResults: 15, q: query, pageToken: more ? search.next : '' };
+  if (!isChannel) {
+    Object.assign(params, { order: search.order, videoDuration: search.length, safeSearch: 'moderate' });
+    if (store.settings.playback === 'embed') params.videoEmbeddable = 'true';
+  }
 
   try {
     const data = await api('search', params);
     if (key !== search.key) return; // a newer search started
-    const ids = [];
-    for (const item of data.items || []) {
-      const id = item.id?.videoId;
-      if (!id) continue;
-      ids.push(id);
-      const prev = videoCache.get(id) || {};
-      videoCache.set(id, {
-        ...prev, id,
-        title: decode(item.snippet.title),
-        channel: item.snippet.channelTitle,
-        thumb: item.snippet.thumbnails?.medium?.url || thumbFor(id),
-        published: item.snippet.publishedAt,
-        desc: decode(item.snippet.description || '')
-      });
-    }
-    await fetchDetails(ids);
+    const ids = isChannel ? ingestSearchChannels(data.items) : ingestSearchVideos(data.items);
+    await (isChannel ? fetchChannels(ids) : fetchDetails(ids));
     if (key !== search.key) return;
     search.items.push(...ids.filter(id => !search.items.includes(id)));
     search.next = data.nextPageToken || '';
     renderResults();
   } catch (err) {
     if (key !== search.key) return;
-    showStatus("Search didn't go through", `${err.message}. Check your connection and try again.`);
     $('result-list').innerHTML = '';
+    showStatus($('results-status'), "Search didn't go through", `${sentence(err.message)} Check your connection and try again.`);
   } finally {
     search.loading = false;
     $('more-btn').disabled = false;
@@ -1034,56 +1181,107 @@ async function runSearch(query, { more = false } = {}) {
 function isShort(v) {
   return (v.durationKnown && v.duration > 0 && v.duration <= 60) || /#shorts?\b/i.test(v.title || '');
 }
+function visibleVideo(v) {
+  return v && !(store.settings.hideShorts && isShort(v));
+}
+function countLabel(n, word) {
+  n = Number(n) || 0;
+  return `${n.toLocaleString()} ${word}${n === 1 ? '' : 's'}`;
+}
 
-function renderSkeleton() {
-  $('results-title').textContent = search.query;
-  $('results-status').hidden = true;
-  $('more-btn').hidden = true;
-  $('result-list').innerHTML = Array.from({ length: 5 }, () => `
+function skeletonRows(n = 5) {
+  return Array.from({ length: n }, () => `
     <li class="result skeleton" aria-hidden="true">
-      <div class="result-main"><div class="thumb"></div>
-      <div class="result-text"><div class="bar" style="width:78%"></div><div class="bar" style="width:40%"></div></div></div>
+      <div class="thumb"></div>
+      <div class="result-text"><div class="bar" style="width:78%"></div><div class="bar" style="width:40%"></div></div>
     </li>`).join('');
 }
 
-function showStatus(title, text) {
-  const s = $('results-status');
-  s.hidden = false;
-  s.innerHTML = `<strong>${esc(title)}</strong>${esc(text)}`;
+function showStatus(el, title, text) {
+  el.hidden = false;
+  el.innerHTML = `<strong>${esc(title)}</strong>${esc(text)}`;
+}
+
+function syncResultFilters() {
+  const isChannel = search.type === 'channel';
+  $('length-filter').hidden = isChannel;
+  $('sort-filter').hidden = isChannel;
+}
+
+function renderResultsSkeleton() {
+  $('results-title').textContent = search.query;
+  syncResultFilters();
+  $('results-status').hidden = true;
+  $('more-btn').hidden = true;
+  $('result-list').innerHTML = skeletonRows(5);
 }
 
 function renderResults() {
   $('results-title').textContent = search.query;
   document.title = `${search.query} – CleanTube`;
-  const list = $('result-list');
-  const items = search.items.map(id => videoCache.get(id)).filter(v => v && !(store.settings.hideShorts && isShort(v)));
-
+  syncResultFilters();
+  const isChannel = search.type === 'channel';
+  const rows = isChannel
+    ? search.items.map(id => channelCache.get(id)).filter(Boolean).map(channelRow)
+    : search.items.map(id => videoCache.get(id)).filter(visibleVideo).map(v => resultRow(v));
   $('results-status').hidden = true;
-  if (!items.length) {
-    list.innerHTML = '';
-    showStatus('No videos found', 'Try different words, or change the length filter.');
-  } else {
-    list.innerHTML = items.map(v => resultRow(v)).join('');
+  $('result-list').innerHTML = rows.join('');
+  if (!rows.length) {
+    showStatus($('results-status'),
+      isChannel ? 'No channels found' : 'No videos found',
+      isChannel ? 'Try the channel’s exact name, or paste its @handle.' : 'Try different words, or change the length filter.');
   }
   $('more-btn').hidden = !search.next;
 }
 
-function resultRow(v) {
+function channelLink(id, name) {
+  return id
+    ? `<a class="channel-link" href="#/channel?id=${esc(id)}" data-channel="${esc(id)}">${esc(name)}</a>`
+    : `<span>${esc(name)}</span>`;
+}
+
+function resultRow(v, list = '') {
   const saved = isSaved(v.id);
   const dur = v.durationKnown ? clock(v.duration) : '';
+  const ytOnly = store.settings.playback === 'embed' && v.embeddable === false ? '<span>Plays on YouTube</span>' : '';
   return `
     <li class="result">
-      <button class="result-main" data-play="${esc(v.id)}">
-        <div class="thumb"><img src="${esc(v.thumb)}" alt="" loading="lazy">${dur ? `<span class="duration">${dur}</span>` : ''}</div>
-        <div class="result-text">
-          <h3 class="result-title">${esc(v.title)}</h3>
-          <div class="meta"><span>${esc(v.channel)}</span>${dur ? `<span class="inline-duration">${dur}</span>` : ''}<span>${esc(ago(v.published))}</span></div>
-          ${v.desc ? `<p class="result-desc">${esc(v.desc)}</p>` : ''}
-        </div>
-      </button>
+      <div class="thumb"><img src="${esc(v.thumb)}" alt="" loading="lazy">${dur ? `<span class="duration">${dur}</span>` : ''}</div>
+      <div class="result-text">
+        <h3 class="result-title"><a class="stretch" href="${esc(watchHash(v.id, list))}" data-play="${esc(v.id)}"${list ? ` data-list="${esc(list)}"` : ''}>${esc(v.title)}</a></h3>
+        <div class="meta">${channelLink(v.channelId, v.channel)}${dur ? `<span class="inline-duration">${dur}</span>` : ''}<span>${esc(ago(v.published))}</span>${ytOnly}</div>
+        ${v.desc ? `<p class="result-desc">${esc(v.desc)}</p>` : ''}
+      </div>
       <button class="icon-btn" data-save="${esc(v.id)}" aria-pressed="${saved}" aria-label="${saved ? 'Remove from saved' : 'Save for later'}" title="${saved ? 'Saved' : 'Save for later'}">
         <svg class="icon"><use href="#i-bookmark"/></svg>
       </button>
+    </li>`;
+}
+
+function channelRow(c) {
+  const meta = [c.handle ? `<span>${esc(c.handle)}</span>` : '', c.videoCount != null ? `<span>${countLabel(c.videoCount, 'video')}</span>` : ''].join('');
+  return `
+    <li class="result channel-row">
+      <img class="avatar" src="${esc(c.thumb)}" alt="" loading="lazy" width="72" height="72">
+      <div class="result-text">
+        <h3 class="result-title"><a class="stretch" href="#/channel?id=${esc(c.id)}" data-channel="${esc(c.id)}">${esc(c.title)}</a></h3>
+        <div class="meta">${meta}</div>
+        ${c.desc ? `<p class="result-desc">${esc(c.desc)}</p>` : ''}
+      </div>
+      ${followBtn(c.id)}
+    </li>`;
+}
+
+function playlistRow(p) {
+  const count = countLabel(p.total, 'video');
+  return `
+    <li class="result">
+      <div class="stack"><div class="thumb"><img src="${esc(p.thumb)}" alt="" loading="lazy"><span class="duration">${count}</span></div></div>
+      <div class="result-text">
+        <h3 class="result-title"><a class="stretch" href="#/playlist?list=${esc(p.id)}" data-playlist="${esc(p.id)}">${esc(p.title)}</a></h3>
+        <div class="meta"><span class="inline-duration">${count}</span>${p.published ? `<span>Created ${esc(ago(p.published).toLowerCase())}</span>` : ''}</div>
+        ${p.desc ? `<p class="result-desc">${esc(p.desc)}</p>` : ''}
+      </div>
     </li>`;
 }
 
@@ -1097,7 +1295,7 @@ function rememberSearch(q) {
 function isSaved(id) { return store.saved.some(v => v.id === id); }
 function videoSummary(id) {
   const v = videoCache.get(id) || store.saved.find(s => s.id === id) || store.history.find(h => h.id === id) || {};
-  return { id, title: v.title || 'YouTube video', channel: v.channel || '', thumb: v.thumb || thumbFor(id) };
+  return { id, title: v.title || 'YouTube video', channel: v.channel || '', channelId: v.channelId || '', thumb: v.thumb || thumbFor(id) };
 }
 function toggleSave(id) {
   if (isSaved(id)) {
@@ -1122,10 +1320,396 @@ function addHistory(id) {
   save();
 }
 
+/* ===================== Channels + playlists ===================== */
+const channelCache = new Map();  // id -> {id,title,handle,thumb,desc,videoCount,uploads}
+const playlistCache = new Map(); // id -> {id,title,channelId,channelTitle,thumb,total,items,next,loaded}
+
+function storeChannel(c) {
+  const prev = channelCache.get(c.id) || {};
+  const s = c.snippet || {};
+  const ch = {
+    ...prev,
+    id: c.id,
+    title: decode(s.title || prev.title || ''),
+    handle: s.customUrl || prev.handle || '',
+    thumb: s.thumbnails?.medium?.url || s.thumbnails?.default?.url || prev.thumb || '',
+    desc: s.description ?? prev.desc ?? '',
+    videoCount: c.statistics ? Number(c.statistics.videoCount) || 0 : prev.videoCount,
+    uploads: c.contentDetails?.relatedPlaylists?.uploads || prev.uploads
+  };
+  channelCache.set(ch.id, ch);
+  const followed = store.channels.find(x => x.id === ch.id);
+  if (followed) { followed.title = ch.title; followed.handle = ch.handle; followed.thumb = ch.thumb || followed.thumb; save(); }
+  return ch;
+}
+
+function ingestSearchChannels(items) {
+  const ids = [];
+  for (const it of items || []) {
+    const id = it.id?.channelId || it.snippet?.channelId;
+    if (!id) continue;
+    ids.push(id);
+    if (!channelCache.get(id)?.uploads) {
+      channelCache.set(id, {
+        ...(channelCache.get(id) || {}), id,
+        title: decode(it.snippet.title),
+        thumb: it.snippet.thumbnails?.medium?.url || it.snippet.thumbnails?.default?.url || '',
+        desc: decode(it.snippet.description || '')
+      });
+    }
+  }
+  return ids;
+}
+
+async function fetchChannels(ids) {
+  const missing = ids.filter(id => !channelCache.get(id)?.uploads);
+  if (!missing.length) return;
+  try {
+    const data = await api('channels', { part: 'snippet,contentDetails,statistics', id: missing.join(','), maxResults: 50 });
+    (data.items || []).forEach(storeChannel);
+  } catch {}
+}
+
+async function getChannel({ id, handle }) {
+  if (id && channelCache.get(id)?.uploads) return channelCache.get(id);
+  const params = { part: 'snippet,contentDetails,statistics' };
+  if (id) params.id = id; else params.forHandle = handle.replace(/^@/, '');
+  const data = await api('channels', params);
+  if (!data.items?.length) throw new Error("That channel couldn't be found");
+  return storeChannel(data.items[0]);
+}
+
+// Playlist items (including a channel's uploads playlist) -> video ids.
+function ingestPlaylistItems(items) {
+  const ids = [];
+  for (const it of items || []) {
+    const s = it.snippet || {};
+    const id = it.contentDetails?.videoId || s.resourceId?.videoId;
+    const title = decode(s.title || '');
+    if (!id || title === 'Private video' || title === 'Deleted video') continue;
+    const prev = videoCache.get(id) || {};
+    videoCache.set(id, {
+      ...prev, id,
+      title: prev.title || title,
+      channel: prev.channel || s.videoOwnerChannelTitle || s.channelTitle || '',
+      channelId: prev.channelId || s.videoOwnerChannelId || s.channelId || '',
+      thumb: prev.thumb || s.thumbnails?.medium?.url || thumbFor(id),
+      published: prev.published || it.contentDetails?.videoPublishedAt || s.publishedAt,
+      desc: prev.desc ?? decode(s.description || '').slice(0, 220)
+    });
+    ids.push(id);
+  }
+  return ids;
+}
+
+/* ---------- Following ---------- */
+function isFollowing(id) { return store.channels.some(c => c.id === id); }
+function followBtn(id) {
+  const on = isFollowing(id);
+  return `<button class="btn follow${on ? '' : ' primary'}" data-follow="${esc(id)}" aria-pressed="${on}">${on ? 'Following' : 'Follow'}</button>`;
+}
+function syncFollowButtons(id) {
+  const on = isFollowing(id);
+  document.querySelectorAll(`[data-follow="${CSS.escape(id)}"]`).forEach(b => {
+    b.setAttribute('aria-pressed', on);
+    b.classList.toggle('primary', !on);
+    b.textContent = on ? 'Following' : 'Follow';
+  });
+}
+function toggleFollow(id) {
+  const c = channelCache.get(id) || store.channels.find(x => x.id === id);
+  if (isFollowing(id)) {
+    store.channels = store.channels.filter(x => x.id !== id);
+    toast(`Unfollowed ${c?.title || 'channel'}`);
+  } else {
+    if (!c) return;
+    store.channels.unshift({ id, title: c.title, handle: c.handle || '', thumb: c.thumb || '', followedAt: new Date().toISOString() });
+    toast(`Following ${c.title}`);
+  }
+  save();
+  syncFollowButtons(id);
+  if ($('library').open) renderLibrary();
+  if (route.name === 'home') renderRecent();
+}
+
+/* ---------- Channel page ---------- */
+const chan = { id: '', tab: 'videos', sort: 'newest', q: '', items: [], next: '', key: '', loading: false };
+let channelToken = 0;
+
+async function showChannel(params) {
+  const id = params.get('id');
+  const handle = (params.get('handle') || '').replace(/^@/, '').toLowerCase();
+  const current = channelCache.get(chan.id);
+  const known = id ? id === chan.id : !!current && (current.handle || '').toLowerCase() === `@${handle}`;
+
+  if (!known) {
+    const token = ++channelToken;
+    Object.assign(chan, { id: '', tab: 'videos', sort: 'newest', q: '', items: [], next: '', key: '', loading: false });
+    $('channel-q').value = '';
+    window.scrollTo(0, 0);
+    renderChannelHead(id ? channelCache.get(id) : null);
+    syncChannelControls();
+    $('channel-list').innerHTML = skeletonRows(4);
+    $('channel-status').hidden = true;
+    $('channel-more').hidden = true;
+    try {
+      const c = await getChannel({ id, handle });
+      if (token !== channelToken) return;
+      chan.id = c.id;
+    } catch (err) {
+      if (token !== channelToken) return;
+      $('channel-list').innerHTML = '';
+      showStatus($('channel-status'), "Couldn't open this channel", sentence(err.message));
+      return;
+    }
+  }
+  renderChannelHead(channelCache.get(chan.id));
+  syncChannelControls();
+  loadChannel();
+}
+
+function renderChannelHead(c) {
+  $('channel-head').classList.toggle('loading', !c);
+  const avatar = $('channel-avatar');
+  if (c?.thumb) avatar.src = c.thumb; else avatar.removeAttribute('src');
+  $('channel-title').textContent = c?.title || '';
+  const meta = [];
+  if (c?.handle) meta.push(`<span>${esc(c.handle)}</span>`);
+  if (c?.videoCount != null) meta.push(`<span>${countLabel(c.videoCount, 'video')}</span>`);
+  $('channel-meta').innerHTML = meta.join('');
+
+  const desc = $('channel-desc');
+  desc.textContent = c?.desc || '';
+  desc.classList.remove('open');
+  const toggle = $('desc-toggle');
+  toggle.textContent = 'More';
+  toggle.hidden = true;
+  requestAnimationFrame(() => { toggle.hidden = !desc.textContent || desc.scrollHeight <= desc.clientHeight + 2; });
+
+  const follow = $('follow-btn');
+  follow.hidden = !c;
+  if (c) { follow.dataset.follow = c.id; syncFollowButtons(c.id); }
+  if (c && route.name === 'channel') document.title = `${c.title} – CleanTube`;
+}
+
+function syncChannelControls() {
+  setSegmented($('channel-tabs'), chan.tab);
+  setSegmented($('channel-sort'), chan.sort);
+  $('channel-sort').hidden = chan.tab !== 'videos' || !!chan.q;
+  $('channel-search').hidden = chan.tab !== 'videos';
+}
+
+async function uploadsPage(c, pageToken) {
+  if (!c.uploads || c.videoCount === 0) return { ids: [], next: '' };
+  try {
+    const data = await api('playlistItems', { part: 'snippet,contentDetails', playlistId: c.uploads, maxResults: 50, pageToken });
+    return { ids: ingestPlaylistItems(data.items), next: data.nextPageToken || '' };
+  } catch (err) {
+    if (/playlist/i.test(err.message)) return { ids: [], next: '' }; // channel with no uploads
+    throw err;
+  }
+}
+
+// "Popular" and searching inside a channel go through the search endpoint.
+async function channelSearchPage(pageToken) {
+  const params = {
+    part: 'snippet', type: 'video', channelId: chan.id, maxResults: 25, pageToken,
+    order: chan.q ? 'relevance' : 'viewCount', q: chan.q
+  };
+  if (store.settings.playback === 'embed') params.videoEmbeddable = 'true';
+  const data = await api('search', params);
+  return { ids: ingestSearchVideos(data.items), next: data.nextPageToken || '' };
+}
+
+async function loadChannel(more = false) {
+  const c = channelCache.get(chan.id);
+  if (!c) return;
+  const key = `${chan.id}|${chan.tab}|${chan.sort}|${chan.q}|${store.settings.playback}`;
+  if (!more && key === chan.key) { renderChannelList(); return; }
+  if (more && chan.loading) return;
+
+  if (!more) {
+    Object.assign(chan, { key, items: [], next: '' });
+    $('channel-list').innerHTML = skeletonRows(4);
+    $('channel-status').hidden = true;
+    $('channel-more').hidden = true;
+  }
+  chan.loading = true;
+  $('channel-more').disabled = true;
+
+  try {
+    if (chan.tab === 'playlists') {
+      const data = await api('playlists', { part: 'snippet,contentDetails', channelId: chan.id, maxResults: 25, pageToken: chan.next });
+      if (key !== chan.key) return;
+      const ids = (data.items || []).filter(p => p.contentDetails?.itemCount > 0).map(p => upsertPlaylist(p).id);
+      chan.items.push(...ids.filter(id => !chan.items.includes(id)));
+      chan.next = data.nextPageToken || '';
+    } else {
+      const viaSearch = !!chan.q || chan.sort === 'popular';
+      let visible = 0, tries = 0;
+      // Hidden Shorts can leave a page nearly empty, so pull a few cheap pages until there's enough to show.
+      do {
+        const page = viaSearch ? await channelSearchPage(chan.next) : await uploadsPage(c, chan.next);
+        await fetchDetails(page.ids);
+        if (key !== chan.key) return;
+        const fresh = page.ids.filter(id => !chan.items.includes(id));
+        chan.items.push(...fresh);
+        chan.next = page.next;
+        visible += fresh.map(id => videoCache.get(id)).filter(visibleVideo).length;
+      } while (!viaSearch && visible < 8 && chan.next && ++tries < 4);
+    }
+    chan.loading = false;
+    renderChannelList();
+  } catch (err) {
+    if (key !== chan.key) return;
+    if (!chan.items.length) {
+      $('channel-list').innerHTML = '';
+      showStatus($('channel-status'), "Couldn't load this channel", sentence(err.message));
+    } else toast("Couldn't load more");
+  } finally {
+    if (key === chan.key) { chan.loading = false; $('channel-more').disabled = false; }
+  }
+}
+
+function renderChannelList() {
+  if (!chan.key) return;
+  const list = $('channel-list'), status = $('channel-status');
+  status.hidden = true;
+  if (chan.loading && !chan.items.length) { list.innerHTML = skeletonRows(4); return; }
+  const rows = chan.tab === 'playlists'
+    ? chan.items.map(id => playlistCache.get(id)).filter(Boolean).map(playlistRow)
+    : chan.items.map(id => videoCache.get(id)).filter(visibleVideo).map(v => resultRow(v));
+  list.innerHTML = rows.join('');
+  if (!rows.length) {
+    if (chan.tab === 'playlists') showStatus(status, 'No playlists', "This channel hasn't made any public playlists.");
+    else if (chan.q) showStatus(status, 'No matches', `Nothing on this channel matches “${chan.q}”.`);
+    else if (store.settings.hideShorts && chan.items.length) showStatus(status, 'Only Shorts so far', 'This channel mostly posts Shorts, which you’ve hidden in Settings.');
+    else showStatus(status, 'No videos yet', "This channel hasn't posted any public videos.");
+  }
+  $('channel-more').hidden = !chan.next;
+}
+
+/* ---------- Playlist page ---------- */
+let playlistToken = 0;
+
+function upsertPlaylist(p) {
+  const prev = playlistCache.get(p.id) || { items: [], next: '', loaded: false };
+  const s = p.snippet || {};
+  const pl = {
+    ...prev,
+    id: p.id,
+    title: decode(s.title || ''),
+    channelId: s.channelId,
+    channelTitle: s.channelTitle,
+    thumb: s.thumbnails?.medium?.url || s.thumbnails?.default?.url || '',
+    desc: decode(s.description || '').slice(0, 220),
+    published: s.publishedAt,
+    total: p.contentDetails?.itemCount ?? prev.total,
+    header: true
+  };
+  playlistCache.set(p.id, pl);
+  return pl;
+}
+
+async function loadPlaylist(list) {
+  let pl = playlistCache.get(list);
+  if (!pl?.header) {
+    const data = await api('playlists', { part: 'snippet,contentDetails', id: list });
+    if (!data.items?.length) throw new Error("That playlist couldn't be found. It may be private");
+    pl = upsertPlaylist(data.items[0]);
+  }
+  if (!pl.loaded) await loadPlaylistPage(list);
+  return pl;
+}
+
+async function loadPlaylistPage(list) {
+  const pl = playlistCache.get(list);
+  if (!pl) return;
+  if (pl.pending) return pl.pending;
+  pl.pending = (async () => {
+    const data = await api('playlistItems', { part: 'snippet,contentDetails', playlistId: list, maxResults: 50, pageToken: pl.next });
+    const ids = ingestPlaylistItems(data.items);
+    await fetchDetails(ids);
+    pl.items.push(...ids.filter(id => !pl.items.includes(id)));
+    pl.next = data.nextPageToken || '';
+    pl.loaded = true;
+  })();
+  try { await pl.pending; } finally { pl.pending = null; }
+}
+
+async function showPlaylist(params) {
+  const list = params.get('list');
+  const token = ++playlistToken;
+  const cached = playlistCache.get(list);
+  renderPlaylistHead(cached);
+  $('playlist-status').hidden = true;
+  if (cached?.loaded) renderPlaylistList(list);
+  else { $('playlist-list').innerHTML = skeletonRows(5); $('playlist-more').hidden = true; }
+  try {
+    const pl = await loadPlaylist(list);
+    if (token !== playlistToken) return;
+    renderPlaylistHead(pl);
+    renderPlaylistList(list);
+  } catch (err) {
+    if (token !== playlistToken) return;
+    $('playlist-list').innerHTML = '';
+    showStatus($('playlist-status'), "Couldn't open this playlist", sentence(err.message));
+  }
+}
+
+function renderPlaylistHead(pl) {
+  $('playlist-title').textContent = pl?.title || '';
+  const meta = [];
+  if (pl?.channelId) meta.push(channelLink(pl.channelId, pl.channelTitle));
+  if (pl?.total != null) meta.push(`<span>${countLabel(pl.total, 'video')}</span>`);
+  $('playlist-meta').innerHTML = meta.join('');
+  $('playlist-play').hidden = !pl?.items?.length;
+  if (pl && route.name === 'playlist') document.title = `${pl.title} – CleanTube`;
+}
+
+function renderPlaylistList(list) {
+  const pl = playlistCache.get(list);
+  if (!pl) return;
+  const rows = pl.items.map(id => videoCache.get(id)).filter(Boolean).map(v => resultRow(v, list));
+  $('playlist-status').hidden = true;
+  $('playlist-list').innerHTML = rows.join('');
+  if (!rows.length) showStatus($('playlist-status'), 'This playlist is empty', 'Its videos may be private or deleted.');
+  $('playlist-more').hidden = !pl.next;
+  $('playlist-play').hidden = !rows.length;
+}
+
+/* ---------- Playlist queue on the watch page ---------- */
+function renderQueue() {
+  const pl = player.list && playlistCache.get(player.list);
+  const bar = $('queue-bar');
+  if (!pl || !pl.items.length) { bar.hidden = true; return; }
+  const i = pl.items.indexOf(player.id);
+  bar.hidden = false;
+  const title = $('queue-title');
+  title.textContent = pl.title;
+  title.dataset.playlist = pl.id;
+  title.href = `#/playlist?list=${pl.id}`;
+  $('queue-pos').textContent = i >= 0 ? `${i + 1} of ${Math.max(pl.total || 0, pl.items.length)}` : '';
+  $('queue-prev').disabled = i <= 0;
+  $('queue-next').disabled = i < 0 || (i >= pl.items.length - 1 && !pl.next);
+}
+
+async function queueStep(dir) {
+  const pl = playlistCache.get(player.list);
+  if (!pl) return;
+  const i = pl.items.indexOf(player.id);
+  if (i < 0) return;
+  if (dir > 0 && i >= pl.items.length - 1 && pl.next) {
+    try { await loadPlaylistPage(pl.id); } catch { toast("Couldn't load the next video"); return; }
+  }
+  const id = pl.items[i + dir];
+  if (id) play(id, pl.id);
+}
+
 /* ===================== Player ===================== */
 const ytPlayer = $('yt-player');
 const supportsDocPiP = 'documentPictureInPicture' in window;
-const player = { id: '', active: false, docked: false, inPip: false, error: false, lastTime: 0, playing: false, rate: 1 };
+const player = { id: '', list: '', active: false, docked: false, inPip: false, error: false, lastTime: 0, playing: false, rate: 1 };
 let pipWindow = null, pipIframe = null, closingPip = false;
 
 function buildEmbedUrl(id, { start = 0, autoplay = true } = {}) {
@@ -1203,12 +1787,13 @@ function renderWatch() {
   $('watch-title').textContent = v.title;
   $('mini-title').textContent = v.title;
   if (route.name === 'watch') document.title = `${v.title} – CleanTube`;
-  const sub = [`<span>${esc(v.channel)}</span>`];
+  const sub = [channelLink(v.channelId, v.channel)];
   if (full?.durationKnown) sub.push(`<span>${clock(full.duration)}</span>`);
   if (full?.published) sub.push(`<span>${esc(ago(full.published))}</span>`);
   $('watch-sub').innerHTML = sub.join('');
   syncSaveBtn();
   renderNotes();
+  renderQueue();
   renderPlayerState();
 }
 
@@ -1245,7 +1830,7 @@ function undock() {
 
 function closeVideo() {
   if (pipWindow) { closingPip = true; pipWindow.close(); }
-  Object.assign(player, { id: '', active: false, docked: false, inPip: false, error: false, playing: false });
+  Object.assign(player, { id: '', list: '', active: false, docked: false, inPip: false, error: false, playing: false });
   ytPlayer.src = 'about:blank';
   renderPlayerState();
   if (route.name === 'watch') goBack();
@@ -1253,7 +1838,7 @@ function closeVideo() {
 
 function showEmbedError() {
   player.error = true;
-  if (player.docked && route.name !== 'watch') navigate(`#/watch?v=${player.id}`);
+  if (player.docked && route.name !== 'watch') navigate(watchHash(player.id, player.list));
   renderPlayerState();
 }
 
@@ -1435,6 +2020,16 @@ function renderLibrary() {
     html = store.saved.map(v => libItem(v, v.channel,
       `<button class="icon-btn" data-unsave="${esc(v.id)}" aria-label="Remove from saved"><svg class="icon"><use href="#i-close"/></svg></button>`)).join('');
     if (!html) html = `<li class="lib-empty"><strong>Nothing saved yet</strong>Tap the bookmark on any result to keep it here.</li>`;
+  } else if (libTab === 'channels') {
+    html = store.channels.map(c => `
+      <li class="lib-item">
+        <button class="lib-open is-channel" data-channel="${esc(c.id)}">
+          <img class="avatar" src="${esc(c.thumb)}" alt="" width="48" height="48" loading="lazy">
+          <div class="lib-text"><div class="lib-title">${esc(c.title)}</div><div class="lib-sub">${esc(c.handle)}</div></div>
+        </button>
+        <button class="icon-btn" data-unfollow="${esc(c.id)}" aria-label="Unfollow ${esc(c.title)}" title="Unfollow"><svg class="icon"><use href="#i-close"/></svg></button>
+      </li>`).join('');
+    if (!html) html = `<li class="lib-empty"><strong>No channels yet</strong>Open a channel and tap Follow to keep it here. Following never adds a feed.</li>`;
   } else if (libTab === 'notes') {
     const entries = Object.entries(store.notes).sort((a, b) => (b[1].updatedAt || '').localeCompare(a[1].updatedAt || ''));
     html = entries.map(([id, n]) => libItem({ id, ...n }, `${n.items.length} note${n.items.length === 1 ? '' : 's'}`)).join('');
@@ -1448,11 +2043,15 @@ function renderLibrary() {
 }
 
 /* ===================== Routing ===================== */
-// #/            home
-// #/search?q=   results
-// #/watch?v=    player
+// #/                  home
+// #/search?q=         results
+// #/watch?v=&list=    player (list = playing from a playlist)
+// #/channel?id= or ?handle=
+// #/playlist?list=
 const route = { name: 'home', params: new URLSearchParams() };
+const VIEWS = ['home', 'results', 'watch', 'channel', 'playlist'];
 let inAppDepth = 0;
+let lastPlaylistShown = '';
 
 function parseHash() {
   const h = location.hash.replace(/^#/, '');
@@ -1460,7 +2059,12 @@ function parseHash() {
   const params = new URLSearchParams(qs || '');
   if (path === '/search' && params.get('q')) return { name: 'results', params };
   if (path === '/watch' && /^[\w-]{11}$/.test(params.get('v') || '')) return { name: 'watch', params };
+  if (path === '/channel' && (/^UC[\w-]{22}$/.test(params.get('id') || '') || /^@?[\w.-]{3,}$/.test(params.get('handle') || ''))) return { name: 'channel', params };
+  if (path === '/playlist' && /^[\w-]{10,}$/.test(params.get('list') || '')) return { name: 'playlist', params };
   return { name: 'home', params };
+}
+function watchHash(id, list = '') {
+  return `#/watch?v=${id}${list ? `&list=${encodeURIComponent(list)}` : ''}`;
 }
 function navigate(hash) {
   if (location.hash === hash) { render(); return; }
@@ -1475,51 +2079,75 @@ function goBack() {
 function render() {
   Object.assign(route, parseHash());
   const name = route.name;
-  $('home').hidden = name !== 'home';
-  $('results').hidden = name !== 'results';
-  $('watch').hidden = name !== 'watch';
+  VIEWS.forEach(v => { $(v).hidden = name !== v; });
   $('toolbar-form').hidden = name === 'home';
+  if (name !== 'home') $('toolbar-input').value = name === 'results' ? route.params.get('q') : (search.query || '');
+  if (name !== 'watch' && player.active) dock();
 
   if (name === 'home') {
     document.title = 'CleanTube';
     renderRecent();
-    if (player.active) dock();
   } else if (name === 'results') {
-    const q = route.params.get('q');
-    $('toolbar-input').value = q;
-    if (player.active) dock();
-    runSearch(q);
+    runSearch(route.params.get('q'));
   } else if (name === 'watch') {
-    const id = route.params.get('v');
-    $('toolbar-input').value = search.query || '';
-    openVideo(id);
+    player.list = route.params.get('list') || '';
+    openVideo(route.params.get('v'));
+    renderQueue();
+    if (player.list && !playlistCache.get(player.list)?.loaded) {
+      const list = player.list;
+      loadPlaylist(list).then(() => { if (player.list === list) renderQueue(); }).catch(() => {});
+    }
     window.scrollTo(0, 0);
+  } else if (name === 'channel') {
+    showChannel(route.params);
+  } else if (name === 'playlist') {
+    const list = route.params.get('list');
+    if (list !== lastPlaylistShown) { lastPlaylistShown = list; window.scrollTo(0, 0); }
+    showPlaylist(route.params);
   }
 }
 window.addEventListener('hashchange', render);
+
+function extractChannelRef(input) {
+  const v = input.trim();
+  let m = v.match(/youtube\.com\/channel\/(UC[\w-]{22})/);
+  if (m) return { id: m[1] };
+  m = v.match(/youtube\.com\/@([\w.-]+)/) || v.match(/^@([\w.-]{3,})$/);
+  return m ? { handle: m[1] } : null;
+}
 
 function submitQuery(raw) {
   const q = raw.trim();
   if (!q) return;
   const id = extractVideoId(q);
-  if (focusMinutes && !store.session) startSession(focusMinutes, id ? '' : q);
-  if (id) { play(id); return; }
-  navigate(`#/search?q=${encodeURIComponent(q)}`);
+  const list = (q.match(/[?&]list=([\w-]{10,})/) || [])[1] || '';
+  const ch = extractChannelRef(q);
+  if (focusMinutes && !store.session) startSession(focusMinutes, id || list || ch ? '' : q);
   document.activeElement?.blur();
+  if (id) play(id, list);
+  else if (list) navigate(`#/playlist?list=${list}`);
+  else if (ch) navigate(ch.id ? `#/channel?id=${ch.id}` : `#/channel?handle=${encodeURIComponent(ch.handle)}`);
+  else navigate(`#/search?q=${encodeURIComponent(q)}`);
 }
-function play(id) {
-  if (store.settings.playback === 'youtube') {
+
+function play(id, list = '') {
+  const v = videoCache.get(id);
+  if (store.settings.playback === 'youtube' || v?.embeddable === false) {
     addHistory(id);
-    window.open(`https://www.youtube.com/watch?v=${id}`, '_blank', 'noopener');
+    window.open(`https://www.youtube.com/watch?v=${id}${list ? `&list=${list}` : ''}`, '_blank', 'noopener');
+    if (store.settings.playback !== 'youtube') toast('This video only plays on YouTube, so it opened there');
     return;
   }
-  navigate(`#/watch?v=${id}`);
+  navigate(watchHash(id, list));
 }
 
 function renderRecent() {
-  const wrap = $('home-recent');
+  const chans = store.channels.slice(0, 10);
+  $('home-channels').hidden = !chans.length;
+  $('channel-chips').innerHTML = chans.map(c =>
+    `<button class="chip with-avatar" data-channel="${esc(c.id)}"><img src="${esc(c.thumb)}" alt="" loading="lazy">${esc(c.title)}</button>`).join('');
   const recent = store.searches.slice(0, 6);
-  wrap.hidden = !recent.length;
+  $('home-recent').hidden = !recent.length;
   $('recent-chips').innerHTML = recent.map(q => `<button class="chip" data-query="${esc(q)}">${esc(q)}</button>`).join('');
 }
 
@@ -1539,8 +2167,15 @@ function updateSetting(key, value) {
   store.settings[key] = value;
   save(true);
   applySettings();
-  if ((key === 'hideShorts') && route.name === 'results') renderResults();
-  if (key === 'playback' && route.name === 'results') runSearch(search.query);
+  if (key === 'hideShorts') {
+    if (route.name === 'results') renderResults();
+    if (route.name === 'channel') renderChannelList();
+  }
+  if (key === 'playback') {
+    if (route.name === 'results') runSearch(search.query);
+    if (route.name === 'channel') loadChannel();
+    if (route.name === 'playlist') renderPlaylistList(route.params.get('list'));
+  }
 }
 
 /* ===================== Events ===================== */
@@ -1557,12 +2192,21 @@ $('set-shorts').addEventListener('change', e => updateSetting('hideShorts', e.ta
 $('set-textonly').addEventListener('change', e => updateSetting('textOnly', e.target.checked));
 $('set-history').addEventListener('change', e => updateSetting('keepHistory', e.target.checked));
 
-// Delegated clicks: play, save, chips, library actions, notes.
+// Delegated clicks: play, channels, playlists, save, follow, chips, library, notes.
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-play],[data-save],[data-query],[data-unsave],[data-seek],[data-del-note],[data-close],#clear-history');
+  const t = e.target.closest('[data-play],[data-channel],[data-playlist],[data-save],[data-follow],[data-unfollow],[data-query],[data-unsave],[data-seek],[data-del-note],[data-close],#clear-history');
   if (!t) return;
-  if (t.dataset.play) { if ($('library').open) $('library').close(); play(t.dataset.play); }
+  if (t.tagName === 'A') {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; // let the browser open a new tab
+    e.preventDefault();
+  }
+  const lib = $('library');
+  if (t.dataset.play) { if (lib.open) lib.close(); play(t.dataset.play, t.dataset.list || ''); }
+  else if (t.dataset.channel) { if (lib.open) lib.close(); navigate(`#/channel?id=${t.dataset.channel}`); }
+  else if (t.dataset.playlist) navigate(`#/playlist?list=${t.dataset.playlist}`);
   else if (t.dataset.save) toggleSave(t.dataset.save);
+  else if (t.dataset.follow) toggleFollow(t.dataset.follow);
+  else if (t.dataset.unfollow) toggleFollow(t.dataset.unfollow);
   else if (t.dataset.unsave) toggleSave(t.dataset.unsave);
   else if (t.dataset.query) { $('hero-input').value = t.dataset.query; submitQuery(t.dataset.query); }
   else if (t.dataset.seek) { command('seekTo', [Number(t.dataset.seek), true]); command('playVideo'); }
@@ -1570,6 +2214,37 @@ document.addEventListener('click', e => {
   else if (t.hasAttribute('data-close')) t.closest('dialog').close();
   else if (t.id === 'clear-history') { store.history = []; save(true); renderLibrary(); toast('History cleared'); }
 });
+
+bindSegmented($('type-filter'), v => { search.type = v; runSearch(search.query); });
+bindSegmented($('channel-tabs'), v => { chan.tab = v; syncChannelControls(); loadChannel(); });
+bindSegmented($('channel-sort'), v => { chan.sort = v; loadChannel(); });
+$('channel-search').addEventListener('submit', e => {
+  e.preventDefault();
+  chan.q = $('channel-q').value.trim();
+  syncChannelControls();
+  loadChannel();
+});
+$('channel-q').addEventListener('input', e => {
+  if (!e.target.value && chan.q) { chan.q = ''; syncChannelControls(); loadChannel(); }
+});
+$('channel-more').addEventListener('click', () => loadChannel(true));
+$('desc-toggle').addEventListener('click', () => {
+  const open = $('channel-desc').classList.toggle('open');
+  $('desc-toggle').textContent = open ? 'Less' : 'More';
+});
+$('playlist-more').addEventListener('click', async () => {
+  const list = route.params.get('list');
+  $('playlist-more').disabled = true;
+  try { await loadPlaylistPage(list); renderPlaylistList(list); }
+  catch { toast("Couldn't load more videos"); }
+  finally { $('playlist-more').disabled = false; }
+});
+$('playlist-play').addEventListener('click', () => {
+  const pl = playlistCache.get(route.params.get('list'));
+  if (pl?.items[0]) play(pl.items[0], pl.id);
+});
+$('queue-prev').addEventListener('click', () => queueStep(-1));
+$('queue-next').addEventListener('click', () => queueStep(1));
 
 $('more-btn').addEventListener('click', () => runSearch(search.query, { more: true }));
 $('back-btn').addEventListener('click', goBack);
@@ -1580,7 +2255,7 @@ $('error-open-btn').addEventListener('click', () => window.open(`https://www.you
 $('pip-btn').addEventListener('click', openPip);
 $('mini-pip').addEventListener('click', openPip);
 $('pip-return-btn').addEventListener('click', () => pipWindow?.close());
-$('mini-expand').addEventListener('click', () => navigate(`#/watch?v=${player.id}`));
+$('mini-expand').addEventListener('click', () => navigate(watchHash(player.id, player.list)));
 $('mini-close').addEventListener('click', closeVideo);
 $('copy-notes').addEventListener('click', copyNotes);
 $('composer').addEventListener('submit', e => { e.preventDefault(); addNote($('note-input').value); $('note-input').value = ''; });
@@ -1623,6 +2298,7 @@ document.addEventListener('keydown', e => {
   else if (k === 'escape' && route.name !== 'home') goBack();
   else if (route.name === 'watch' && k === 'n') { e.preventDefault(); $('note-input').focus(); }
   else if (route.name === 'watch' && k === 's') toggleSave(player.id);
+  else if (route.name === 'channel' && k === 'f' && chan.id) toggleFollow(chan.id);
 });
 function focusSearch() {
   const input = route.name === 'home' ? $('hero-input') : $('toolbar-input');
