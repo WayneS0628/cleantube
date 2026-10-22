@@ -417,12 +417,115 @@ body.text-only .result { padding: 12px 10px; }
   position: absolute; inset: 0; display: none;
   flex-direction: column; align-items: center; justify-content: center; gap: 14px;
   text-align: center; padding: 24px; color: #A1A1A6; background: #0A0A0A;
+  z-index: 5;
 }
 .player-overlay p { margin: 0; max-width: 34ch; }
 .player-overlay .btn { background: rgba(255, 255, 255, 0.14); color: #fff; }
 .player-overlay .btn:hover { background: rgba(255, 255, 255, 0.22); }
 
 .mini-bar { display: none; }
+
+/* ---------- CleanTube player controls ---------- */
+.player-frame:fullscreen { width: 100vw; height: 100vh; aspect-ratio: auto; border-radius: 0; }
+.player-frame:-webkit-full-screen { width: 100vw; height: 100vh; aspect-ratio: auto; border-radius: 0; }
+.player-shield { position: absolute; inset: 0; z-index: 2; display: none; }
+.player-frame.custom .player-shield { display: block; }
+.player-frame.custom.passthrough .player-shield { display: none; }
+.player-frame.custom:not(.hud-on) .player-shield { cursor: none; }
+
+.hud {
+  position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 3;
+  display: none; flex-direction: column; gap: 4px;
+  padding: 6px 10px 6px;
+  border-radius: 16px;
+  background: rgba(30, 30, 32, 0.56);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.14), 0 10px 30px rgba(0, 0, 0, 0.35);
+  color: #fff;
+  opacity: 0; transform: translateY(6px); pointer-events: none;
+  transition: opacity 0.35s var(--ease), transform 0.35s var(--ease);
+}
+.player-frame.custom .hud { display: flex; }
+.player-frame.hud-on .hud { opacity: 1; transform: none; pointer-events: auto; }
+#watch.docked .hud, #watch.docked .hud-flash { display: none; }
+.player-frame:fullscreen .hud { left: 24px; right: 24px; bottom: 24px; max-width: 980px; margin: 0 auto; }
+.player-frame:-webkit-full-screen .hud { left: 24px; right: 24px; bottom: 24px; max-width: 980px; margin: 0 auto; }
+
+.hud-scrub { position: relative; height: 18px; display: flex; align-items: center; margin: 0 4px; }
+.hud-seek { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.hud-track {
+  position: absolute; left: 0; right: 0; height: 4px; border-radius: 999px; overflow: hidden;
+  background: rgba(255, 255, 255, 0.22); transition: height 0.15s var(--ease);
+}
+.hud-buffer, .hud-fill { position: absolute; top: 0; bottom: 0; left: 0; width: 0; }
+.hud-buffer { background: rgba(255, 255, 255, 0.28); }
+.hud-fill { background: #fff; }
+.hud-knob {
+  position: absolute; left: 0; width: 13px; height: 13px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4); transform: translateX(-50%) scale(0);
+  transition: transform 0.15s var(--ease); pointer-events: none;
+}
+.hud-tip {
+  position: absolute; bottom: 22px; left: 0; transform: translateX(-50%);
+  padding: 3px 8px; border-radius: 8px; background: rgba(0, 0, 0, 0.72);
+  font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity 0.15s var(--ease);
+}
+.hud-scrub:hover .hud-track, .hud-scrub.active .hud-track { height: 7px; }
+.hud-scrub:hover .hud-knob, .hud-scrub.active .hud-knob { transform: translateX(-50%) scale(1); }
+.hud-scrub:hover .hud-tip, .hud-scrub.active .hud-tip { opacity: 1; }
+.hud-seek:focus-visible ~ .hud-track { box-shadow: 0 0 0 2px var(--accent); }
+
+.hud-row { display: flex; align-items: center; gap: 2px; }
+.hud-btn {
+  width: 34px; height: 34px; border-radius: 10px; flex: none;
+  display: inline-grid; place-items: center; color: #fff;
+  transition: background 0.2s var(--ease);
+}
+.hud-btn:hover { background: rgba(255, 255, 255, 0.14); }
+.hud-btn .icon { width: 20px; height: 20px; }
+.hud-btn[aria-pressed="true"] { background: rgba(255, 255, 255, 0.22); }
+.hud-rate { width: auto; min-width: 34px; padding: 0 8px; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.hud-time { margin: 0 8px; font-size: 13px; font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, 0.86); white-space: nowrap; }
+.hud-spacer { flex: 1; min-width: 4px; }
+.hud-vol { display: inline-flex; align-items: center; }
+.hud-vol input {
+  width: 0; opacity: 0; margin: 0; accent-color: #fff; cursor: pointer;
+  transition: width 0.25s var(--ease), opacity 0.25s var(--ease), margin 0.25s var(--ease);
+}
+.hud-vol:hover input, .hud-vol:focus-within input { width: 76px; opacity: 1; margin-right: 6px; }
+
+.hud-flash {
+  position: absolute; left: 50%; top: 50%; z-index: 3;
+  width: 72px; height: 72px; margin: -36px 0 0 -36px; border-radius: 50%;
+  display: grid; place-items: center; color: #fff; background: rgba(0, 0, 0, 0.42);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  opacity: 0; pointer-events: none;
+}
+.hud-flash .icon { width: 32px; height: 32px; }
+.hud-flash.go { animation: hud-flash 0.65s var(--ease); }
+@keyframes hud-flash { 0% { opacity: 1; transform: scale(0.85); } 100% { opacity: 0; transform: scale(1.3); } }
+
+.end-card {
+  position: absolute; inset: 0; z-index: 4; display: none;
+  flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  padding: 24px; text-align: center; color: #fff; background: rgba(0, 0, 0, 0.84);
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+}
+.end-card.show { display: flex; }
+.end-title { margin: 0; font-family: var(--font-display); font-size: 21px; font-weight: 600; letter-spacing: -0.02em; }
+.end-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 100%; }
+.end-card .btn { background: rgba(255, 255, 255, 0.14); color: #fff; height: 40px; padding: 0 18px; }
+.end-card .btn:hover { background: rgba(255, 255, 255, 0.22); }
+.end-card .btn.primary { background: #fff; color: #111; }
+#end-next { max-width: min(440px, 100%); }
+#end-next-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+@media (max-width: 720px) {
+  #hud-back, #hud-fwd, #hud-pip, .hud-vol input { display: none; }
+  .hud { left: 8px; right: 8px; bottom: 8px; }
+}
 
 .watch-meta { padding: 18px 2px 0; }
 .watch-title {
@@ -624,6 +727,15 @@ dialog[open] { animation: rise 0.4s var(--ease); }
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6.5" y="5" width="4" height="14" rx="1.2" fill="currentColor" stroke="none"/><rect x="13.5" y="5" width="4" height="14" rx="1.2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-vol" viewBox="0 0 24 24"><path d="M4 9.5h3l4.5-4v13L7 14.5H4z" fill="currentColor" stroke="none"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9.5h3l4.5-4v13L7 14.5H4z" fill="currentColor" stroke="none"/><path d="m16 9.5 5 5M21 9.5l-5 5"/></symbol>
+  <symbol id="i-cc" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="3"/><path d="M10.6 10.3a2.2 2.2 0 1 0 0 3.4M17 10.3a2.2 2.2 0 1 0 0 3.4"/></symbol>
+  <symbol id="i-full" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+  <symbol id="i-unfull" viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></symbol>
+  <symbol id="i-rew" viewBox="0 0 24 24"><path d="M5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 3.5v4h4"/><text x="12.4" y="15.4" text-anchor="middle" font-size="7.5" font-weight="700" fill="currentColor" stroke="none" font-family="-apple-system, system-ui, sans-serif">10</text></symbol>
+  <symbol id="i-ffw" viewBox="0 0 24 24"><path d="M19 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 3.5v4h-4"/><text x="11.6" y="15.4" text-anchor="middle" font-size="7.5" font-weight="700" fill="currentColor" stroke="none" font-family="-apple-system, system-ui, sans-serif">10</text></symbol>
+  <symbol id="i-replay" viewBox="0 0 24 24"><path d="M5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 3.5v4h4"/></symbol>
 </svg>
 
 <header class="toolbar">
@@ -768,8 +880,40 @@ dialog[open] { animation: rise 0.4s var(--ease); }
     <div class="watch-grid">
       <div>
         <div class="player-card" id="player-card">
-          <div class="player-frame">
+          <div class="player-frame" id="player-frame">
             <iframe id="yt-player" title="Video player" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+            <div id="player-shield" class="player-shield"></div>
+            <div id="hud-flash" class="hud-flash" aria-hidden="true"></div>
+            <div id="player-hud" class="hud">
+              <div id="hud-scrub" class="hud-scrub">
+                <input id="hud-seek" class="hud-seek" type="range" min="0" max="1000" step="1" value="0" aria-label="Seek">
+                <div class="hud-track"><div id="hud-buffer" class="hud-buffer"></div><div id="hud-fill" class="hud-fill"></div></div>
+                <div id="hud-knob" class="hud-knob"></div>
+                <div id="hud-tip" class="hud-tip">0:00</div>
+              </div>
+              <div class="hud-row">
+                <button id="hud-play" class="hud-btn" aria-label="Play"></button>
+                <button id="hud-back" class="hud-btn" aria-label="Back 10 seconds" title="Back 10 seconds"><svg class="icon"><use href="#i-rew"/></svg></button>
+                <button id="hud-fwd" class="hud-btn" aria-label="Forward 10 seconds" title="Forward 10 seconds"><svg class="icon"><use href="#i-ffw"/></svg></button>
+                <span class="hud-time"><span id="hud-cur">0:00</span> / <span id="hud-dur">0:00</span></span>
+                <span class="hud-spacer"></span>
+                <span class="hud-vol">
+                  <input id="hud-vol" type="range" min="0" max="100" step="1" value="100" aria-label="Volume">
+                  <button id="hud-mute" class="hud-btn" aria-label="Mute"></button>
+                </span>
+                <button id="hud-cc" class="hud-btn" aria-label="Captions" title="Captions (C)" aria-pressed="false"><svg class="icon"><use href="#i-cc"/></svg></button>
+                <button id="hud-rate" class="hud-btn hud-rate" aria-label="Playback speed" title="Playback speed">1×</button>
+                <button id="hud-pip" class="hud-btn" aria-label="Pop out" title="Pop out"><svg class="icon"><use href="#i-pip"/></svg></button>
+                <button id="hud-full" class="hud-btn" aria-label="Full screen" title="Full screen (F)"></button>
+              </div>
+            </div>
+            <div id="end-card" class="end-card">
+              <p class="end-title">That's the end of this video</p>
+              <div class="end-actions">
+                <button id="end-replay" class="btn"><svg class="icon"><use href="#i-replay"/></svg>Watch again</button>
+                <button id="end-next" class="btn primary" hidden><span>Next:</span><span id="end-next-title"></span></button>
+              </div>
+            </div>
             <div id="pip-overlay" class="player-overlay">
               <svg class="icon" style="width:28px;height:28px"><use href="#i-pip"/></svg>
               <p>Playing in picture in picture.</p>
@@ -782,6 +926,7 @@ dialog[open] { animation: rise 0.4s var(--ease); }
           </div>
           <div class="mini-bar">
             <span id="mini-title" class="mini-title"></span>
+            <button id="mini-play" class="icon-btn" aria-label="Pause" title="Pause"><svg class="icon"><use href="#i-pause"/></svg></button>
             <button id="mini-expand" class="icon-btn" aria-label="Expand" title="Expand"><svg class="icon"><use href="#i-expand"/></svg></button>
             <button id="mini-pip" class="icon-btn" aria-label="Pop out" title="Pop out"><svg class="icon"><use href="#i-pip"/></svg></button>
             <button id="mini-close" class="icon-btn" aria-label="Close video" title="Close"><svg class="icon"><use href="#i-close"/></svg></button>
@@ -874,6 +1019,13 @@ dialog[open] { animation: rise 0.4s var(--ease); }
           <button type="button" role="radio" data-v="youtube" aria-checked="false">On YouTube</button>
         </div>
       </div>
+      <div class="row">
+        <span class="row-label" id="ctl-label">Player controls<small>CleanTube's fade out 2 seconds after you stop moving the mouse</small></span>
+        <div class="segmented" role="radiogroup" aria-labelledby="ctl-label" id="set-controls">
+          <button type="button" role="radio" data-v="cleantube" aria-checked="true">CleanTube</button>
+          <button type="button" role="radio" data-v="youtube" aria-checked="false">YouTube</button>
+        </div>
+      </div>
     </div>
 
     <p class="group-title">Fewer distractions</p>
@@ -907,6 +1059,12 @@ dialog[open] { animation: rise 0.4s var(--ease); }
     <p class="group-title">Keyboard shortcuts</p>
     <div class="group">
       <div class="shortcut-row"><span>Search</span><span><kbd>/</kbd></span></div>
+      <div class="shortcut-row"><span>Play or pause</span><span><kbd>Space</kbd></span></div>
+      <div class="shortcut-row"><span>Back or forward 10 seconds</span><span><kbd>←</kbd> <kbd>→</kbd></span></div>
+      <div class="shortcut-row"><span>Captions</span><span><kbd>C</kbd></span></div>
+      <div class="shortcut-row"><span>Full screen</span><span><kbd>F</kbd></span></div>
+      <div class="shortcut-row"><span>Mute</span><span><kbd>M</kbd></span></div>
+      <div class="shortcut-row"><span>Reach YouTube's own buttons, like Skip ad</span><span>Hold <kbd>⌥ Option</kbd></span></div>
       <div class="shortcut-row"><span>Write a note</span><span><kbd>N</kbd></span></div>
       <div class="shortcut-row"><span>Save video</span><span><kbd>S</kbd></span></div>
       <div class="shortcut-row"><span>Follow channel</span><span><kbd>F</kbd></span></div>
@@ -957,7 +1115,7 @@ const PIP_MODE = new URLSearchParams(location.search).has('pip');
 /* ===================== Store ===================== */
 const STORE_KEY = 'cleantube.v2';
 const defaults = () => ({
-  settings: { playback: 'embed', hideShorts: true, textOnly: false, keepHistory: true, theme: 'auto' },
+  settings: { playback: 'embed', controls: 'cleantube', captions: false, hideShorts: true, textOnly: false, keepHistory: true, theme: 'auto' },
   saved: [],      // [{id,title,channel,thumb,addedAt}]
   history: [],    // [{id,title,channel,thumb,watchedAt}]
   searches: [],   // [query]
@@ -1095,7 +1253,7 @@ async function fetchDetails(ids) {
   const missing = ids.filter(id => !videoCache.get(id)?.durationKnown);
   if (!missing.length) return;
   try {
-    const data = await api('videos', { part: 'snippet,contentDetails,status', id: missing.join(','), maxResults: 50 });
+    const data = await api('videos', { part: 'snippet,contentDetails,status,player', id: missing.join(','), maxResults: 50, maxWidth: 1280 });
     for (const v of data.items || []) {
       const prev = videoCache.get(v.id) || {};
       videoCache.set(v.id, {
@@ -1109,7 +1267,9 @@ async function fetchDetails(ids) {
         desc: prev.desc ?? decode(v.snippet.description || '').slice(0, 220),
         duration: parseISODuration(v.contentDetails?.duration),
         durationKnown: true,
-        embeddable: v.status ? v.status.embeddable !== false : prev.embeddable
+        embeddable: v.status ? v.status.embeddable !== false : prev.embeddable,
+        aspect: Number(v.player?.embedWidth) > 0 && Number(v.player?.embedHeight) > 0
+          ? Number(v.player.embedWidth) / Number(v.player.embedHeight) : prev.aspect
       });
     }
   } catch {}
@@ -1709,11 +1869,21 @@ async function queueStep(dir) {
 /* ===================== Player ===================== */
 const ytPlayer = $('yt-player');
 const supportsDocPiP = 'documentPictureInPicture' in window;
-const player = { id: '', list: '', active: false, docked: false, inPip: false, error: false, lastTime: 0, playing: false, rate: 1 };
+const player = {
+  id: '', list: '', active: false, docked: false, inPip: false, error: false,
+  state: -1, playing: false, lastTime: 0, timeAt: 0, duration: 0, loaded: 0,
+  volume: 100, muted: false, rate: 1, playStartedAt: 0
+};
 let pipWindow = null, pipIframe = null, closingPip = false;
 
-function buildEmbedUrl(id, { start = 0, autoplay = true } = {}) {
-  const p = new URLSearchParams({ autoplay: autoplay ? 1 : 0, rel: 0, modestbranding: 1, enablejsapi: 1, playsinline: 1, iv_load_policy: 3 });
+// native = YouTube's own controls. CleanTube's controls hide YouTube's (controls=0) and draw their own.
+function buildEmbedUrl(id, { start = 0, autoplay = true, native = !useCustom() } = {}) {
+  const p = new URLSearchParams({ autoplay: autoplay ? 1 : 0, rel: 0, enablejsapi: 1, playsinline: 1, iv_load_policy: 3 });
+  if (!native) { p.set('controls', 0); p.set('disablekb', 1); p.set('fs', 0); }
+  if (store.settings.captions) {
+    p.set('cc_load_policy', 1);
+    p.set('cc_lang_pref', (navigator.language || 'en').slice(0, 2));
+  }
   if (start > 0) p.set('start', Math.floor(start));
   if (location.origin && location.origin !== 'null') p.set('origin', location.origin);
   return `https://www.youtube.com/embed/${id}?${p}`;
@@ -1730,7 +1900,13 @@ function trackPlayer(iframe, win, onEvent) {
     let data;
     try { data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch { return; }
     if (!data || !data.event) return;
-    heard = true;
+    if (!heard) {
+      heard = true;
+      // Ask for state change and error events in addition to the regular info updates.
+      ['onStateChange', 'onError'].forEach(ev => {
+        try { iframe.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'addEventListener', args: [ev], id: 1, channel: 'widget' }), '*'); } catch {}
+      });
+    }
     onEvent(data);
   });
   iframe.addEventListener('load', () => {
@@ -1745,19 +1921,20 @@ function trackPlayer(iframe, win, onEvent) {
 function handlePlayerEvent(data) {
   const info = data.info;
   if (info && typeof info === 'object') {
-    if (typeof info.currentTime === 'number') player.lastTime = info.currentTime;
-    if (typeof info.playerState === 'number') {
-      const wasPlaying = player.playing;
-      player.playing = info.playerState === 1;
-      if (player.playing && !wasPlaying && player.rate !== 1) command('setPlaybackRate', [player.rate]);
-    }
+    if (typeof info.currentTime === 'number') { player.lastTime = info.currentTime; player.timeAt = performance.now(); }
+    if (typeof info.duration === 'number' && info.duration > 0) player.duration = info.duration;
+    if (typeof info.videoLoadedFraction === 'number') player.loaded = info.videoLoadedFraction;
+    if (typeof info.volume === 'number') player.volume = info.volume;
+    if (typeof info.muted === 'boolean') player.muted = info.muted;
+    if (typeof info.playerState === 'number') setState(info.playerState);
+    else if (typeof info.volume === 'number' || typeof info.muted === 'boolean') syncHud();
   }
-  if (data.event === 'onStateChange' && typeof info === 'number') player.playing = info === 1;
+  if (data.event === 'onStateChange' && typeof info === 'number') setState(info);
 }
 trackPlayer(ytPlayer, window, data => {
   if (player.inPip) return;
   handlePlayerEvent(data);
-  if (data.event === 'onError' && [100, 101, 150].includes(data.info)) showEmbedError();
+  if (data.event === 'onError' && [100, 101, 150, 152, 153].includes(data.info)) showEmbedError();
 });
 
 function command(func, args = []) {
@@ -1771,9 +1948,14 @@ async function openVideo(id) {
   if (player.active && player.id === id) { undock(); return; }
   if (pipWindow) { closingPip = true; pipWindow.close(); }
 
-  Object.assign(player, { id, active: true, docked: false, inPip: false, error: false, lastTime: 0, playing: true });
+  Object.assign(player, {
+    id, active: true, docked: false, inPip: false, error: false,
+    state: -1, playing: false, lastTime: 0, timeAt: performance.now(),
+    duration: videoCache.get(id)?.duration || 0, loaded: 0, playStartedAt: 0
+  });
   ytPlayer.src = buildEmbedUrl(id);
   renderWatch();
+  showHud();
   addHistory(id);
   if (!videoCache.get(id)?.durationKnown) {
     await fetchDetails([id]);
@@ -1809,6 +1991,9 @@ function renderPlayerState() {
   // While popped out and away from the watch page, there's nothing to show in the corner.
   w.classList.toggle('hidden-dock', player.docked && player.inPip);
   setSegmented($('speed'), player.rate);
+  renderEndCard();
+  layoutPlayer();
+  syncHud();
 }
 
 function syncSaveBtn() {
@@ -1830,6 +2015,7 @@ function undock() {
 
 function closeVideo() {
   if (pipWindow) { closingPip = true; pipWindow.close(); }
+  if (fsElement()) toggleFullscreen();
   Object.assign(player, { id: '', list: '', active: false, docked: false, inPip: false, error: false, playing: false });
   ytPlayer.src = 'about:blank';
   renderPlayerState();
@@ -1846,7 +2032,305 @@ function setRate(rate) {
   player.rate = Number(rate) || 1;
   command('setPlaybackRate', [player.rate]);
   setSegmented($('speed'), player.rate);
+  syncHud();
 }
+
+/* ---------- CleanTube player controls ---------- */
+// YouTube always shows its title bar and "More videos" row when a video is paused, and
+// no embed setting turns that off. So CleanTube hides YouTube's controls, draws its own
+// that fade out, and whenever YouTube's overlays could appear it makes the iframe taller
+// than the video and clips it back to the video's exact rectangle, so the overlays
+// (which hug the iframe's top and bottom edges) land outside what you can see.
+const playerFrame = $('player-frame');
+const shield = $('player-shield');
+const hud = { timer: 0, hover: false, scrubbing: false, volDrag: false, keyboard: false, pointer: 'mouse', raf: false };
+const svgIcon = id => `<svg class="icon"><use href="#${id}"/></svg>`;
+const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement;
+function useCustom() { return store.settings.controls !== 'youtube'; }
+
+function duration() { return player.duration || videoCache.get(player.id)?.duration || 0; }
+function currentTime() {
+  let t = player.lastTime;
+  if (player.playing && player.timeAt) t += (performance.now() - player.timeAt) / 1000 * player.rate;
+  const d = duration();
+  return d ? Math.min(t, d) : t;
+}
+
+function setState(s) {
+  const prev = player.state;
+  const wasPlaying = player.playing;
+  player.state = s;
+  player.playing = s === 1;
+  if (player.playing && !wasPlaying) {
+    player.playStartedAt = performance.now();
+    setTimeout(layoutPlayer, 2600);
+    if (player.rate !== 1) command('setPlaybackRate', [player.rate]);
+  }
+  if (s !== prev || player.playing !== wasPlaying) {
+    renderEndCard();
+    layoutPlayer();
+    syncHud();
+  }
+}
+
+function hideYouTubeChrome() {
+  if (!useCustom() || !player.active || player.inPip || player.error) return false;
+  if (playerFrame.classList.contains('passthrough')) return false;
+  if (player.playing || player.state === 3) {
+    // Captions can sit near the bottom edge, so with captions on, only clip while
+    // YouTube's title is still fading out after you press play.
+    return !store.settings.captions || performance.now() - player.playStartedAt < 2500;
+  }
+  return true; // not started, paused, cued or ended
+}
+
+function layoutPlayer() {
+  const custom = useCustom() && player.active && !player.inPip && !player.error;
+  playerFrame.classList.toggle('custom', custom);
+  if (!custom) playerFrame.classList.remove('hud-on', 'passthrough');
+  const st = ytPlayer.style;
+  if (!hideYouTubeChrome()) {
+    st.left = st.top = st.width = st.height = st.clipPath = st.webkitClipPath = '';
+    return;
+  }
+  const W = playerFrame.clientWidth, H = playerFrame.clientHeight;
+  if (!W || !H) return;
+  const a = videoCache.get(player.id)?.aspect || 16 / 9;
+  let wv = W, hv = W / a;             // where the video actually sits inside the frame
+  if (hv > H) { hv = H; wv = H * a; }
+  const c = Math.round(Math.max(120, hv * 0.25)); // room for YouTube's top and bottom overlays
+  st.left = `${(W - wv) / 2}px`;
+  st.top = `${(H - hv) / 2 - c}px`;
+  st.width = `${wv}px`;
+  st.height = `${hv + 2 * c}px`;
+  st.clipPath = st.webkitClipPath = `inset(${c}px 0)`;
+}
+if ('ResizeObserver' in window) new ResizeObserver(() => layoutPlayer()).observe(playerFrame);
+
+/* HUD */
+function showHud() {
+  if (!playerFrame.classList.contains('custom') || $('end-card').classList.contains('show')) return;
+  playerFrame.classList.add('hud-on');
+  syncHud();
+  startHudLoop();
+  clearTimeout(hud.timer);
+  hud.timer = setTimeout(hideHud, 2000);
+}
+function hideHud() {
+  const keyboardFocus = hud.keyboard && $('player-hud').contains(document.activeElement);
+  if (hud.hover || hud.scrubbing || hud.volDrag || keyboardFocus) { hud.timer = setTimeout(hideHud, 1000); return; }
+  playerFrame.classList.remove('hud-on');
+}
+function startHudLoop() {
+  if (hud.raf) return;
+  hud.raf = true;
+  const step = () => {
+    if (!playerFrame.classList.contains('hud-on')) { hud.raf = false; return; }
+    tickHud();
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function tickHud() {
+  const d = duration();
+  const t = hud.scrubbing ? Number($('hud-seek').value) / 1000 * d : currentTime();
+  if (!hud.scrubbing) $('hud-seek').value = d ? Math.round(t / d * 1000) : 0;
+  const pct = `${d ? Math.max(0, Math.min(1, t / d)) * 100 : 0}%`;
+  $('hud-fill').style.width = pct;
+  $('hud-knob').style.left = pct;
+  $('hud-buffer').style.width = `${Math.min(1, player.loaded || 0) * 100}%`;
+  $('hud-cur').textContent = clock(t);
+  $('hud-dur').textContent = clock(d);
+  $('hud-seek').setAttribute('aria-valuetext', `${clock(t)} of ${clock(d)}`);
+}
+function syncHud() {
+  const icon = player.playing ? 'i-pause' : 'i-play';
+  const label = player.playing ? 'Pause' : 'Play';
+  for (const id of ['hud-play', 'mini-play']) {
+    const b = $(id);
+    b.innerHTML = svgIcon(icon);
+    b.setAttribute('aria-label', label);
+    b.title = label;
+  }
+  const silent = player.muted || player.volume === 0;
+  $('hud-mute').innerHTML = svgIcon(silent ? 'i-mute' : 'i-vol');
+  $('hud-mute').setAttribute('aria-label', silent ? 'Unmute' : 'Mute');
+  if (!hud.volDrag) $('hud-vol').value = player.muted ? 0 : player.volume;
+  $('hud-cc').setAttribute('aria-pressed', store.settings.captions);
+  $('hud-rate').textContent = `${player.rate}×`;
+  const fs = !!fsElement();
+  $('hud-full').innerHTML = svgIcon(fs ? 'i-unfull' : 'i-full');
+  $('hud-full').setAttribute('aria-label', fs ? 'Exit full screen' : 'Full screen');
+  $('hud-pip').hidden = !supportsDocPiP;
+  tickHud();
+}
+function flash(iconId) {
+  const f = $('hud-flash');
+  f.innerHTML = svgIcon(iconId);
+  f.classList.remove('go');
+  void f.offsetWidth; // restart the animation
+  f.classList.add('go');
+}
+
+/* Actions */
+function togglePlay(withFlash = true) {
+  if (!player.active || player.error) return;
+  if (player.state === 0) { replay(); return; }
+  player.lastTime = currentTime();
+  player.timeAt = performance.now();
+  const willPlay = !player.playing;
+  player.playing = willPlay; // update right away; YouTube confirms a moment later
+  if (willPlay) { player.playStartedAt = performance.now(); setTimeout(layoutPlayer, 2600); }
+  command(willPlay ? 'playVideo' : 'pauseVideo');
+  if (withFlash) flash(willPlay ? 'i-play' : 'i-pause');
+  layoutPlayer();
+  syncHud();
+  showHud();
+}
+function seekTo(t, show = true) {
+  const d = duration();
+  t = Math.max(0, d ? Math.min(t, d - 0.5) : t);
+  player.lastTime = t;
+  player.timeAt = performance.now();
+  command('seekTo', [t, true]);
+  if (show) showHud(); else tickHud();
+}
+function seekBy(delta) {
+  seekTo(currentTime() + delta);
+  flash(delta < 0 ? 'i-rew' : 'i-ffw');
+}
+function replay() {
+  seekTo(0, false);
+  command('playVideo');
+}
+function toggleMute() {
+  if (player.muted || player.volume === 0) {
+    command('unMute');
+    if (!player.volume) { player.volume = 50; command('setVolume', [50]); }
+    player.muted = false;
+  } else {
+    command('mute');
+    player.muted = true;
+  }
+  syncHud();
+  showHud();
+}
+function toggleCaptions() {
+  const on = !store.settings.captions;
+  store.settings.captions = on;
+  save(true);
+  command(on ? 'loadModule' : 'unloadModule', ['captions']);
+  toast(on ? 'Captions on' : 'Captions off');
+  layoutPlayer();
+  syncHud();
+  showHud();
+}
+function cycleRate() {
+  const rates = [1, 1.25, 1.5, 2];
+  setRate(rates[(rates.indexOf(player.rate) + 1) % rates.length]);
+  showHud();
+}
+function toggleFullscreen() {
+  if (fsElement()) (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
+  else (playerFrame.requestFullscreen || playerFrame.webkitRequestFullscreen)?.call(playerFrame);
+}
+
+// Covers YouTube's end screen of suggested videos.
+function renderEndCard() {
+  const show = player.active && !player.inPip && !player.error && player.state === 0;
+  $('end-card').classList.toggle('show', show);
+  if (!show) return;
+  playerFrame.classList.remove('hud-on');
+  const pl = player.list && playlistCache.get(player.list);
+  const i = pl ? pl.items.indexOf(player.id) : -1;
+  const next = pl && i >= 0 ? videoCache.get(pl.items[i + 1]) : null;
+  $('end-next').hidden = !next;
+  if (next) $('end-next-title').textContent = next.title;
+}
+
+/* Wiring */
+playerFrame.addEventListener('pointermove', e => {
+  hud.pointer = e.pointerType;
+  if (e.pointerType === 'mouse') { hud.keyboard = false; showHud(); }
+});
+playerFrame.addEventListener('pointerdown', e => { hud.pointer = e.pointerType; hud.keyboard = false; });
+playerFrame.addEventListener('mouseleave', () => {
+  hud.hover = false;
+  clearTimeout(hud.timer);
+  hud.timer = setTimeout(hideHud, 400);
+});
+$('player-hud').addEventListener('pointerenter', () => { hud.hover = true; });
+$('player-hud').addEventListener('pointerleave', () => { hud.hover = false; });
+// Keep mouse clicks from leaving focus on a button, which would keep the bar on screen.
+$('player-hud').addEventListener('mousedown', e => { if (e.target.closest('button')) e.preventDefault(); });
+$('player-hud').addEventListener('focusin', () => { if (hud.keyboard) showHud(); });
+document.addEventListener('keydown', e => { if (e.key === 'Tab') hud.keyboard = true; }, true);
+
+shield.addEventListener('click', () => {
+  // On touch screens, the first tap shows the controls instead of pausing.
+  if (hud.pointer === 'touch' && !player.docked && !playerFrame.classList.contains('hud-on')) { showHud(); return; }
+  togglePlay();
+});
+shield.addEventListener('dblclick', () => { if (!player.docked) toggleFullscreen(); });
+
+$('hud-play').addEventListener('click', () => togglePlay(false));
+$('mini-play').addEventListener('click', () => togglePlay(false));
+$('hud-back').addEventListener('click', () => seekBy(-10));
+$('hud-fwd').addEventListener('click', () => seekBy(10));
+$('hud-mute').addEventListener('click', toggleMute);
+$('hud-cc').addEventListener('click', toggleCaptions);
+$('hud-rate').addEventListener('click', cycleRate);
+$('hud-pip').addEventListener('click', () => openPip());
+$('hud-full').addEventListener('click', toggleFullscreen);
+$('end-replay').addEventListener('click', replay);
+$('end-next').addEventListener('click', () => queueStep(1));
+
+function positionTip(frac) {
+  frac = Math.max(0, Math.min(1, frac));
+  const tip = $('hud-tip');
+  tip.textContent = clock(frac * duration());
+  tip.style.left = `${frac * 100}%`;
+}
+$('hud-seek').addEventListener('input', () => {
+  hud.scrubbing = true;
+  $('hud-scrub').classList.add('active');
+  positionTip(Number($('hud-seek').value) / 1000);
+  tickHud();
+});
+$('hud-seek').addEventListener('change', () => {
+  hud.scrubbing = false;
+  $('hud-scrub').classList.remove('active');
+  seekTo(Number($('hud-seek').value) / 1000 * duration());
+  if (!hud.keyboard) $('hud-seek').blur();
+});
+$('hud-scrub').addEventListener('pointermove', e => {
+  const r = $('hud-scrub').getBoundingClientRect();
+  positionTip((e.clientX - r.left) / r.width);
+});
+$('hud-vol').addEventListener('input', () => {
+  hud.volDrag = true;
+  const v = Number($('hud-vol').value);
+  player.volume = v;
+  command('setVolume', [v]);
+  if (v > 0 && player.muted) { command('unMute'); player.muted = false; }
+  syncHud();
+});
+$('hud-vol').addEventListener('change', () => { hud.volDrag = false; if (!hud.keyboard) $('hud-vol').blur(); });
+
+['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => { syncHud(); layoutPlayer(); showHud(); }));
+if (!(playerFrame.requestFullscreen || playerFrame.webkitRequestFullscreen)) $('hud-full').hidden = true;
+
+// Holding Option lets clicks reach YouTube's own player, for things like an ad's Skip button.
+function setPassthrough(on) {
+  if (on === playerFrame.classList.contains('passthrough')) return;
+  playerFrame.classList.toggle('passthrough', on);
+  layoutPlayer();
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Alt' && route.name === 'watch' && playerFrame.classList.contains('custom')) setPassthrough(true);
+});
+document.addEventListener('keyup', e => { if (e.key === 'Alt') setPassthrough(false); });
+document.addEventListener('pointermove', e => { if (!e.altKey) setPassthrough(false); });
 
 /* ---------- Document Picture-in-Picture (Chrome, Edge) ---------- */
 async function openPip() {
@@ -1866,7 +2350,7 @@ async function openPip() {
   const frame = doc.createElement('iframe');
   frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
   frame.allowFullscreen = true;
-  frame.src = pipPageUrl(player.id, player.lastTime, true);
+  frame.src = pipPageUrl(player.id, currentTime(), true);
   doc.body.appendChild(frame);
   win.addEventListener('message', e => {
     if (e.source === frame.contentWindow && e.data?.cleantubePip) handlePlayerEvent(e.data.cleantubePip);
@@ -1907,7 +2391,7 @@ function addNote(text) {
   const v = videoSummary(player.id);
   const entry = store.notes[player.id] || (store.notes[player.id] = { ...v, items: [] });
   entry.title = v.title; entry.channel = v.channel; entry.thumb = v.thumb;
-  entry.items.push({ t: Math.floor(player.lastTime), text, at: Date.now() });
+  entry.items.push({ t: Math.floor(currentTime()), text, at: Date.now() });
   entry.updatedAt = new Date().toISOString();
   save();
   renderNotes();
@@ -1985,7 +2469,7 @@ setInterval(() => {
     store.stats[k] = (store.stats[k] || 0) + 1;
     if (++statTick % 15 === 0) save();
   }
-  if (route.name === 'watch') $('add-note').textContent = `Add at ${clock(player.lastTime)}`;
+  if (route.name === 'watch') $('add-note').textContent = `Add at ${clock(currentTime())}`;
 }, 1000);
 
 function weekSeconds() {
@@ -2159,6 +2643,7 @@ function applySettings() {
   document.body.classList.toggle('text-only', s.textOnly);
   setSegmented($('set-playback'), s.playback);
   setSegmented($('set-theme'), s.theme);
+  setSegmented($('set-controls'), s.controls);
   $('set-shorts').checked = s.hideShorts;
   $('set-textonly').checked = s.textOnly;
   $('set-history').checked = s.keepHistory;
@@ -2167,6 +2652,13 @@ function updateSetting(key, value) {
   store.settings[key] = value;
   save(true);
   applySettings();
+  if (key === 'controls' && player.active && !player.inPip) {
+    // Reload the player with the other set of controls, at the same spot.
+    const t = currentTime(), wasPlaying = player.playing;
+    Object.assign(player, { state: -1, playing: false, lastTime: t, timeAt: performance.now() });
+    ytPlayer.src = buildEmbedUrl(player.id, { start: t, autoplay: wasPlaying });
+    renderPlayerState();
+  }
   if (key === 'hideShorts') {
     if (route.name === 'results') renderResults();
     if (route.name === 'channel') renderChannelList();
@@ -2188,6 +2680,7 @@ bindSegmented($('speed'), setRate);
 bindSegmented($('lib-tabs'), v => { libTab = v; renderLibrary(); });
 bindSegmented($('set-playback'), v => updateSetting('playback', v));
 bindSegmented($('set-theme'), v => updateSetting('theme', v));
+bindSegmented($('set-controls'), v => updateSetting('controls', v));
 $('set-shorts').addEventListener('change', e => updateSetting('hideShorts', e.target.checked));
 $('set-textonly').addEventListener('change', e => updateSetting('textOnly', e.target.checked));
 $('set-history').addEventListener('change', e => updateSetting('keepHistory', e.target.checked));
@@ -2209,7 +2702,7 @@ document.addEventListener('click', e => {
   else if (t.dataset.unfollow) toggleFollow(t.dataset.unfollow);
   else if (t.dataset.unsave) toggleSave(t.dataset.unsave);
   else if (t.dataset.query) { $('hero-input').value = t.dataset.query; submitQuery(t.dataset.query); }
-  else if (t.dataset.seek) { command('seekTo', [Number(t.dataset.seek), true]); command('playVideo'); }
+  else if (t.dataset.seek) { seekTo(Number(t.dataset.seek)); command('playVideo'); }
   else if (t.dataset.delNote) deleteNote(t.dataset.delNote);
   else if (t.hasAttribute('data-close')) t.closest('dialog').close();
   else if (t.id === 'clear-history') { store.history = []; save(true); renderLibrary(); toast('History cleared'); }
@@ -2250,7 +2743,7 @@ $('more-btn').addEventListener('click', () => runSearch(search.query, { more: tr
 $('back-btn').addEventListener('click', goBack);
 $('close-btn').addEventListener('click', closeVideo);
 $('save-btn').addEventListener('click', () => toggleSave(player.id));
-$('yt-btn').addEventListener('click', () => { command('pauseVideo'); window.open(`https://www.youtube.com/watch?v=${player.id}&t=${Math.floor(player.lastTime)}`, '_blank', 'noopener'); });
+$('yt-btn').addEventListener('click', () => { command('pauseVideo'); window.open(`https://www.youtube.com/watch?v=${player.id}&t=${Math.floor(currentTime())}`, '_blank', 'noopener'); });
 $('error-open-btn').addEventListener('click', () => window.open(`https://www.youtube.com/watch?v=${player.id}`, '_blank', 'noopener'));
 $('pip-btn').addEventListener('click', openPip);
 $('mini-pip').addEventListener('click', openPip);
@@ -2299,6 +2792,15 @@ document.addEventListener('keydown', e => {
   else if (route.name === 'watch' && k === 'n') { e.preventDefault(); $('note-input').focus(); }
   else if (route.name === 'watch' && k === 's') toggleSave(player.id);
   else if (route.name === 'channel' && k === 'f' && chan.id) toggleFollow(chan.id);
+  else if (route.name === 'watch' && player.active && !player.error) {
+    const onPage = !document.activeElement || document.activeElement === document.body;
+    if ((k === ' ' && onPage) || k === 'k') { e.preventDefault(); togglePlay(); }
+    else if (k === 'arrowleft') { e.preventDefault(); seekBy(-10); }
+    else if (k === 'arrowright') { e.preventDefault(); seekBy(10); }
+    else if (k === 'm') toggleMute();
+    else if (k === 'c') toggleCaptions();
+    else if (k === 'f') toggleFullscreen();
+  }
 });
 function focusSearch() {
   const input = route.name === 'home' ? $('hero-input') : $('toolbar-input');
@@ -2333,7 +2835,7 @@ function startPipMode(params) {
     if (!rateSet && data.info?.playerState === 1) { send('setPlaybackRate', [rate]); rateSet = true; }
     try { window.parent.postMessage({ cleantubePip: data }, target); } catch {}
   });
-  frame.src = buildEmbedUrl(id, { start: Number(params.get('t')) || 0, autoplay: params.get('a') !== '0' });
+  frame.src = buildEmbedUrl(id, { start: Number(params.get('t')) || 0, autoplay: params.get('a') !== '0', native: true });
   document.body.appendChild(frame);
   return true;
 }
