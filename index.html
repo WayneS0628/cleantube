@@ -622,6 +622,70 @@ dialog[open] { animation: rise 0.4s var(--ease); }
 .stat span { font-size: 13px; color: var(--ink-2); }
 
 .lib-list { list-style: none; margin: 14px 0 0; padding: 0; }
+
+/* ---------- Saved folders ---------- */
+.lib-folders { margin-top: 14px; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill {
+  height: 30px; padding: 0 12px; border-radius: 999px; max-width: 100%;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--fill); font-size: 13px; font-weight: 500;
+  transition: background 0.2s var(--ease);
+}
+.pill:hover { background: var(--fill-2); }
+.pill-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; }
+.pill-count { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.pill[aria-pressed="true"] { background: var(--ink); color: var(--canvas); }
+.pill[aria-pressed="true"] .pill-count { color: inherit; opacity: 0.7; }
+.pill.add { background: transparent; color: var(--accent); box-shadow: inset 0 0 0 1px var(--hair); }
+.pill.add:hover { background: var(--accent-soft); }
+.pill .icon { width: 14px; height: 14px; }
+.pill-form input, .rename-form input {
+  height: 30px; width: 170px; padding: 0 12px; border: 0; border-radius: 999px;
+  background: var(--surface); box-shadow: 0 0 0 1.5px var(--accent); font-size: 13px;
+}
+.folder-head { display: flex; align-items: center; gap: 2px; margin-top: 16px; }
+.folder-head h3 {
+  margin: 0 auto 0 0; min-width: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.02em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.folder-head .btn { height: 30px; font-size: 13px; }
+.rename-form { display: flex; gap: 6px; align-items: center; flex: 1; }
+.rename-form input { flex: 1; width: auto; height: 34px; font-size: 15px; border-radius: 10px; }
+
+.save-pop {
+  position: fixed; inset: auto; margin: 0; padding: 0;
+  width: 264px; max-height: min(440px, calc(100vh - 24px)); overflow: auto;
+  border-radius: 16px;
+  background: var(--surface); /* solid, so text behind it can't bleed through */
+}
+#save-pop::backdrop { background: transparent; }
+.save-pop[open] { animation: pop-in 0.2s var(--ease); }
+@keyframes pop-in { from { opacity: 0; transform: scale(0.96) translateY(-4px); } }
+.pop-inner { padding: 6px; }
+.pop-title { margin: 6px 10px 4px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.pop-list { list-style: none; margin: 0; padding: 0; }
+.pop-item {
+  width: 100%; display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 10px; font-size: 14px; text-align: left;
+}
+.pop-item:hover { background: var(--fill); }
+.pop-item .icon { width: 16px; height: 16px; color: var(--accent); visibility: hidden; stroke-width: 2.4; }
+.pop-item[aria-pressed="true"] .icon { visibility: visible; }
+.pop-item .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pop-item .count { color: var(--ink-3); font-size: 12px; font-variant-numeric: tabular-nums; }
+.pop-new {
+  display: flex; align-items: center; gap: 10px; margin-top: 4px; padding: 4px 10px;
+  border-radius: 10px; box-shadow: 0 -0.5px 0 var(--hair);
+}
+.pop-new:focus-within { background: var(--fill); }
+.pop-new .icon { width: 16px; height: 16px; color: var(--ink-2); }
+.pop-new input { flex: 1; min-width: 0; height: 30px; border: 0; background: transparent; font-size: 14px; }
+.pop-new input::placeholder { color: var(--ink-2); }
+.pop-new input:focus-visible { outline: none; box-shadow: none; }
+#pop-remove { margin-top: 4px; color: var(--danger); }
+#pop-remove .icon { visibility: visible; color: var(--danger); stroke-width: 1.8; }
+#save-btn span { max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
 .lib-item { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 8px; margin: 0 -8px; border-radius: 14px; }
 .lib-item:hover { background: var(--fill); }
 .lib-item .thumb { border-radius: 8px; }
@@ -726,6 +790,8 @@ dialog[open] { animation: rise 0.4s var(--ease); }
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3.5 7.5a2 2 0 0 1 2-2h3.8l2 2h7.2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6.5" y="5" width="4" height="14" rx="1.2" fill="currentColor" stroke="none"/><rect x="13.5" y="5" width="4" height="14" rx="1.2" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-vol" viewBox="0 0 24 24"><path d="M4 9.5h3l4.5-4v13L7 14.5H4z" fill="currentColor" stroke="none"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
@@ -998,6 +1064,7 @@ dialog[open] { animation: rise 0.4s var(--ease); }
       <button type="button" role="radio" data-v="notes" aria-checked="false">Notes</button>
       <button type="button" role="radio" data-v="history" aria-checked="false">History</button>
     </div>
+    <div id="lib-folders" class="lib-folders"></div>
     <ul id="lib-list" class="lib-list"></ul>
     <div id="lib-foot" class="lib-foot"></div>
   </div>
@@ -1103,6 +1170,19 @@ dialog[open] { animation: rise 0.4s var(--ease); }
   </div>
 </dialog>
 
+<!-- Save to folder -->
+<dialog id="save-pop" class="save-pop" aria-labelledby="save-pop-title">
+  <div class="pop-inner">
+    <p id="save-pop-title" class="pop-title">Save to</p>
+    <ul id="pop-list" class="pop-list"></ul>
+    <form id="pop-new" class="pop-new">
+      <svg class="icon"><use href="#i-plus"/></svg>
+      <input id="pop-new-name" maxlength="40" placeholder="New folder" aria-label="New folder name" autocomplete="off" enterkeyhint="done">
+    </form>
+    <button id="pop-remove" class="pop-item" hidden><svg class="icon"><use href="#i-trash"/></svg><span class="name">Remove from saved</span></button>
+  </div>
+</dialog>
+
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -1116,7 +1196,8 @@ const PIP_MODE = new URLSearchParams(location.search).has('pip');
 const STORE_KEY = 'cleantube.v2';
 const defaults = () => ({
   settings: { playback: 'embed', controls: 'cleantube', captions: false, hideShorts: true, textOnly: false, keepHistory: true, theme: 'auto' },
-  saved: [],      // [{id,title,channel,thumb,addedAt}]
+  saved: [],      // [{id,title,channel,thumb,addedAt,folder}] folder '' = no folder
+  folders: [],    // [{id,name,createdAt}]
   history: [],    // [{id,title,channel,thumb,watchedAt}]
   searches: [],   // [query]
   notes: {},      // {videoId: {title, channel, thumb, items:[{t,text,at}]}}
@@ -1412,7 +1493,7 @@ function resultRow(v, list = '') {
         <div class="meta">${channelLink(v.channelId, v.channel)}${dur ? `<span class="inline-duration">${dur}</span>` : ''}<span>${esc(ago(v.published))}</span>${ytOnly}</div>
         ${v.desc ? `<p class="result-desc">${esc(v.desc)}</p>` : ''}
       </div>
-      <button class="icon-btn" data-save="${esc(v.id)}" aria-pressed="${saved}" aria-label="${saved ? 'Remove from saved' : 'Save for later'}" title="${saved ? 'Saved' : 'Save for later'}">
+      <button class="icon-btn" data-save="${esc(v.id)}" aria-pressed="${saved}" aria-label="${saved ? 'Saved. Change folder' : 'Save'}" title="${saved ? esc(folderName(savedEntry(v.id).folder) || 'Saved') : 'Save'}">
         <svg class="icon"><use href="#i-bookmark"/></svg>
       </button>
     </li>`;
@@ -1457,23 +1538,115 @@ function videoSummary(id) {
   const v = videoCache.get(id) || store.saved.find(s => s.id === id) || store.history.find(h => h.id === id) || {};
   return { id, title: v.title || 'YouTube video', channel: v.channel || '', channelId: v.channelId || '', thumb: v.thumb || thumbFor(id) };
 }
-function toggleSave(id) {
-  if (isSaved(id)) {
-    store.saved = store.saved.filter(v => v.id !== id);
-    toast('Removed from saved');
-  } else {
-    store.saved.unshift({ ...videoSummary(id), addedAt: new Date().toISOString() });
-    toast('Saved for later');
-  }
+/* ---------- Saving + folders ---------- */
+function savedEntry(id) { return store.saved.find(v => v.id === id); }
+function folderName(id) { return store.folders.find(f => f.id === id)?.name || ''; }
+function sortedFolders() { return [...store.folders].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })); }
+
+function afterSaveChange(id) {
   save();
+  const on = isSaved(id);
   document.querySelectorAll(`[data-save="${CSS.escape(id)}"]`).forEach(b => {
-    const on = isSaved(id);
     b.setAttribute('aria-pressed', on);
-    b.setAttribute('aria-label', on ? 'Remove from saved' : 'Save for later');
+    b.setAttribute('aria-label', on ? 'Saved. Change folder' : 'Save');
+    b.title = on ? (folderName(savedEntry(id).folder) || 'Saved') : 'Save';
   });
   if (id === player.id) syncSaveBtn();
   if ($('library').open) renderLibrary();
 }
+function saveTo(id, folderId = '') {
+  let entry = savedEntry(id);
+  if (!entry) {
+    entry = { ...videoSummary(id), addedAt: new Date().toISOString() };
+    store.saved.unshift(entry);
+  }
+  entry.folder = folderId;
+  afterSaveChange(id);
+  toast(folderId ? `Saved to ${folderName(folderId)}` : 'Saved');
+}
+function unsave(id) {
+  store.saved = store.saved.filter(v => v.id !== id);
+  afterSaveChange(id);
+  toast('Removed from saved');
+}
+function createFolder(name) {
+  name = name.trim().slice(0, 40);
+  if (!name) return null;
+  const existing = store.folders.find(f => f.name.toLowerCase() === name.toLowerCase());
+  if (existing) return existing;
+  const f = { id: `f${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, name, createdAt: new Date().toISOString() };
+  store.folders.push(f);
+  save();
+  return f;
+}
+function renameFolder(id, name) {
+  const f = store.folders.find(x => x.id === id);
+  name = name.trim().slice(0, 40);
+  if (!f || !name) return;
+  f.name = name;
+  save();
+  if (savedEntry(player.id)?.folder === id) syncSaveBtn();
+}
+function deleteFolder(id) {
+  const f = store.folders.find(x => x.id === id);
+  if (!f) return;
+  store.folders = store.folders.filter(x => x.id !== id);
+  let moved = 0;
+  store.saved.forEach(v => { if (v.folder === id) { v.folder = ''; moved++; } });
+  save();
+  libFolder = 'all';
+  folderUi = '';
+  if ($('library').open) renderLibrary();
+  if (player.active) syncSaveBtn();
+  toast(moved === 0 ? `Deleted ${f.name}` : `Deleted ${f.name}. ${moved === 1 ? 'Its video is' : `Its ${moved} videos are`} still saved`);
+}
+
+/* The "Save to" menu */
+let popFor = '';
+function openSavePop(id, anchor) {
+  if (!id) return;
+  popFor = id;
+  renderSavePop();
+  const d = $('save-pop');
+  if (!d.open) d.showModal();
+  const r = anchor.getBoundingClientRect();
+  const w = d.offsetWidth, h = d.offsetHeight;
+  const left = Math.min(Math.max(12, r.right - w), innerWidth - w - 12);
+  let top = r.bottom + 8;
+  if (top + h > innerHeight - 12) top = Math.max(12, r.top - h - 8);
+  d.style.left = `${left}px`;
+  d.style.top = `${top}px`;
+}
+function renderSavePop() {
+  const entry = savedEntry(popFor);
+  const current = entry ? entry.folder || '' : null;
+  const count = id => store.saved.filter(v => (v.folder || '') === id).length;
+  const items = [{ id: '', name: 'No folder' }, ...sortedFolders()];
+  $('pop-list').innerHTML = items.map(f => `
+    <li><button class="pop-item" data-pick="${esc(f.id)}" aria-pressed="${current === f.id}">
+      <svg class="icon"><use href="#i-check"/></svg><span class="name">${esc(f.name)}</span><span class="count">${count(f.id) || ''}</span>
+    </button></li>`).join('');
+  $('save-pop-title').textContent = entry ? 'Move to' : 'Save to';
+  $('pop-remove').hidden = !entry;
+  $('pop-new-name').value = '';
+}
+$('pop-list').addEventListener('click', e => {
+  const b = e.target.closest('[data-pick]');
+  if (!b) return;
+  saveTo(popFor, b.dataset.pick);
+  $('save-pop').close();
+});
+$('pop-new').addEventListener('submit', e => {
+  e.preventDefault();
+  const f = createFolder($('pop-new-name').value);
+  if (!f) return;
+  saveTo(popFor, f.id);
+  $('save-pop').close();
+});
+$('pop-remove').addEventListener('click', () => { unsave(popFor); $('save-pop').close(); });
+$('save-pop').addEventListener('click', e => { if (e.target === $('save-pop')) $('save-pop').close(); });
+window.addEventListener('resize', () => { if ($('save-pop').open) $('save-pop').close(); });
+
 function addHistory(id) {
   if (!store.settings.keepHistory) return;
   store.history = [{ ...videoSummary(id), watchedAt: new Date().toISOString() }, ...store.history.filter(v => v.id !== id)].slice(0, 200);
@@ -2000,7 +2173,7 @@ function syncSaveBtn() {
   const on = isSaved(player.id);
   const b = $('save-btn');
   b.setAttribute('aria-pressed', on);
-  b.querySelector('span').textContent = on ? 'Saved' : 'Save';
+  b.querySelector('span').textContent = on ? (folderName(savedEntry(player.id).folder) || 'Saved') : 'Save';
 }
 
 function dock() {
@@ -2483,6 +2656,8 @@ function weekSeconds() {
 
 /* ===================== Library ===================== */
 let libTab = 'saved';
+let libFolder = 'all'; // 'all', '' (no folder) or a folder id
+let folderUi = '';     // '', 'new' or 'rename'
 function libItem(v, sub, extra = '') {
   return `
     <li class="lib-item">
@@ -2493,6 +2668,29 @@ function libItem(v, sub, extra = '') {
       ${extra}
     </li>`;
 }
+function renderFolderBar() {
+  const count = id => store.saved.filter(v => (v.folder || '') === id).length;
+  const pill = (id, name, n) =>
+    `<button class="pill" data-folder-filter="${esc(id)}" aria-pressed="${libFolder === id}"><span class="pill-name">${esc(name)}</span><span class="pill-count">${n}</span></button>`;
+  const pills = [pill('all', 'All', store.saved.length)];
+  if (store.folders.length) pills.push(pill('', 'No folder', count('')));
+  sortedFolders().forEach(f => pills.push(pill(f.id, f.name, count(f.id))));
+  pills.push(folderUi === 'new'
+    ? `<form class="pill-form" id="new-folder-form"><input id="new-folder-name" maxlength="40" placeholder="Folder name" aria-label="Folder name" autocomplete="off" enterkeyhint="done"></form>`
+    : `<button class="pill add" id="new-folder-btn"><svg class="icon"><use href="#i-plus"/></svg>New folder</button>`);
+
+  let head = '';
+  const current = store.folders.find(f => f.id === libFolder);
+  if (current) {
+    head = folderUi === 'rename'
+      ? `<div class="folder-head"><form class="rename-form" id="rename-form"><input id="rename-name" maxlength="40" value="${esc(current.name)}" aria-label="Folder name" autocomplete="off"><button class="btn primary" type="submit">Rename</button></form></div>`
+      : `<div class="folder-head"><h3>${esc(current.name)}</h3><button class="btn plain" id="rename-folder">Rename</button><button class="btn plain danger" id="delete-folder">Delete folder</button></div>`;
+  }
+  $('lib-folders').innerHTML = `<div class="pills">${pills.join('')}</div>${head}`;
+  const input = $('new-folder-name') || $('rename-name');
+  if (input) { input.focus(); input.select(); }
+}
+
 function renderLibrary() {
   $('stat-today').textContent = minutesLabel(store.stats[dayKey()] || 0);
   $('stat-week').textContent = minutesLabel(weekSeconds());
@@ -2500,10 +2698,21 @@ function renderLibrary() {
   foot.innerHTML = '';
   let html = '';
 
+  $('lib-folders').hidden = libTab !== 'saved';
   if (libTab === 'saved') {
-    html = store.saved.map(v => libItem(v, v.channel,
-      `<button class="icon-btn" data-unsave="${esc(v.id)}" aria-label="Remove from saved"><svg class="icon"><use href="#i-close"/></svg></button>`)).join('');
-    if (!html) html = `<li class="lib-empty"><strong>Nothing saved yet</strong>Tap the bookmark on any result to keep it here.</li>`;
+    if (libFolder !== 'all' && libFolder !== '' && !store.folders.some(f => f.id === libFolder)) libFolder = 'all';
+    renderFolderBar();
+    const items = store.saved.filter(v => libFolder === 'all' || (v.folder || '') === libFolder);
+    html = items.map(v => {
+      const where = libFolder === 'all' ? folderName(v.folder) : '';
+      return libItem(v, [v.channel, where].filter(Boolean).join(', '),
+        `<button class="icon-btn" data-move="${esc(v.id)}" aria-label="Move or remove" title="Move or remove"><svg class="icon"><use href="#i-folder"/></svg></button>`);
+    }).join('');
+    if (!html) {
+      if (!store.saved.length) html = `<li class="lib-empty"><strong>Nothing saved yet</strong>Tap the bookmark on any video to save it, and pick a folder if you like.</li>`;
+      else if (libFolder === '') html = `<li class="lib-empty"><strong>Everything's in a folder</strong>Videos you save without picking a folder show up here.</li>`;
+      else html = `<li class="lib-empty"><strong>This folder is empty</strong>Tap the bookmark on any video and choose “${esc(folderName(libFolder))}”.</li>`;
+    }
   } else if (libTab === 'channels') {
     html = store.channels.map(c => `
       <li class="lib-item">
@@ -2677,7 +2886,38 @@ bindSegmented($('focus-choice'), v => { focusMinutes = Number(v); if (!focusMinu
 bindSegmented($('length-filter'), v => { search.length = v; runSearch(search.query); });
 bindSegmented($('sort-filter'), v => { search.order = v; runSearch(search.query); });
 bindSegmented($('speed'), setRate);
-bindSegmented($('lib-tabs'), v => { libTab = v; renderLibrary(); });
+bindSegmented($('lib-tabs'), v => { libTab = v; folderUi = ''; renderLibrary(); });
+$('lib-folders').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b || b.closest('form')) return; // the rename form's button submits the form instead
+  if (b.dataset.folderFilter !== undefined) { libFolder = b.dataset.folderFilter; folderUi = ''; }
+  else if (b.id === 'new-folder-btn') folderUi = 'new';
+  else if (b.id === 'rename-folder') folderUi = 'rename';
+  else if (b.id === 'delete-folder') { deleteFolder(libFolder); return; }
+  else return;
+  renderLibrary();
+});
+$('lib-folders').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = e.target.querySelector('input').value;
+  if (e.target.id === 'new-folder-form') {
+    const f = createFolder(name);
+    if (f) { libFolder = f.id; toast(`Created ${f.name}`); }
+  } else if (e.target.id === 'rename-form') {
+    renameFolder(libFolder, name);
+  }
+  folderUi = '';
+  renderLibrary();
+});
+$('lib-folders').addEventListener('keydown', e => {
+  if (e.key === 'Escape' && folderUi) { e.preventDefault(); e.stopPropagation(); folderUi = ''; renderLibrary(); }
+});
+// Clicking away from an empty "new folder" field cancels it.
+$('lib-folders').addEventListener('focusout', e => {
+  if (e.target.id === 'new-folder-name' && !e.target.value.trim()) {
+    setTimeout(() => { if (folderUi === 'new' && !$('lib-folders').contains(document.activeElement)) { folderUi = ''; renderLibrary(); } }, 120);
+  }
+});
 bindSegmented($('set-playback'), v => updateSetting('playback', v));
 bindSegmented($('set-theme'), v => updateSetting('theme', v));
 bindSegmented($('set-controls'), v => updateSetting('controls', v));
@@ -2687,7 +2927,7 @@ $('set-history').addEventListener('change', e => updateSetting('keepHistory', e.
 
 // Delegated clicks: play, channels, playlists, save, follow, chips, library, notes.
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-play],[data-channel],[data-playlist],[data-save],[data-follow],[data-unfollow],[data-query],[data-unsave],[data-seek],[data-del-note],[data-close],#clear-history');
+  const t = e.target.closest('[data-play],[data-channel],[data-playlist],[data-save],[data-move],[data-follow],[data-unfollow],[data-query],[data-unsave],[data-seek],[data-del-note],[data-close],#clear-history');
   if (!t) return;
   if (t.tagName === 'A') {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; // let the browser open a new tab
@@ -2697,10 +2937,11 @@ document.addEventListener('click', e => {
   if (t.dataset.play) { if (lib.open) lib.close(); play(t.dataset.play, t.dataset.list || ''); }
   else if (t.dataset.channel) { if (lib.open) lib.close(); navigate(`#/channel?id=${t.dataset.channel}`); }
   else if (t.dataset.playlist) navigate(`#/playlist?list=${t.dataset.playlist}`);
-  else if (t.dataset.save) toggleSave(t.dataset.save);
+  else if (t.dataset.save) openSavePop(t.dataset.save, t);
+  else if (t.dataset.move) openSavePop(t.dataset.move, t);
   else if (t.dataset.follow) toggleFollow(t.dataset.follow);
   else if (t.dataset.unfollow) toggleFollow(t.dataset.unfollow);
-  else if (t.dataset.unsave) toggleSave(t.dataset.unsave);
+  else if (t.dataset.unsave) unsave(t.dataset.unsave);
   else if (t.dataset.query) { $('hero-input').value = t.dataset.query; submitQuery(t.dataset.query); }
   else if (t.dataset.seek) { seekTo(Number(t.dataset.seek)); command('playVideo'); }
   else if (t.dataset.delNote) deleteNote(t.dataset.delNote);
@@ -2742,7 +2983,7 @@ $('queue-next').addEventListener('click', () => queueStep(1));
 $('more-btn').addEventListener('click', () => runSearch(search.query, { more: true }));
 $('back-btn').addEventListener('click', goBack);
 $('close-btn').addEventListener('click', closeVideo);
-$('save-btn').addEventListener('click', () => toggleSave(player.id));
+$('save-btn').addEventListener('click', () => openSavePop(player.id, $('save-btn')));
 $('yt-btn').addEventListener('click', () => { command('pauseVideo'); window.open(`https://www.youtube.com/watch?v=${player.id}&t=${Math.floor(currentTime())}`, '_blank', 'noopener'); });
 $('error-open-btn').addEventListener('click', () => window.open(`https://www.youtube.com/watch?v=${player.id}`, '_blank', 'noopener'));
 $('pip-btn').addEventListener('click', openPip);
@@ -2790,7 +3031,7 @@ document.addEventListener('keydown', e => {
   else if (k === 'l') { renderLibrary(); $('library').showModal(); }
   else if (k === 'escape' && route.name !== 'home') goBack();
   else if (route.name === 'watch' && k === 'n') { e.preventDefault(); $('note-input').focus(); }
-  else if (route.name === 'watch' && k === 's') toggleSave(player.id);
+  else if (route.name === 'watch' && k === 's') { e.preventDefault(); openSavePop(player.id, $('save-btn')); }
   else if (route.name === 'channel' && k === 'f' && chan.id) toggleFollow(chan.id);
   else if (route.name === 'watch' && player.active && !player.error) {
     const onPage = !document.activeElement || document.activeElement === document.body;
