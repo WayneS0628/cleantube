@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CleanTube">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>CleanTube</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%235E5CE6'/%3E%3Cpath d='M26 21.5v21l17-10.5z' fill='white'/%3E%3C/svg%3E">
 <style>
@@ -86,7 +92,7 @@
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: 100vh; min-height: 100dvh;
   background: var(--canvas);
   color: var(--ink);
   font-family: var(--font);
@@ -174,10 +180,11 @@ a { color: inherit; text-decoration: none; }
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 0.5px solid var(--hair);
+  padding-top: env(safe-area-inset-top);
 }
 .toolbar-inner {
   max-width: var(--page); margin: 0 auto;
-  height: 56px; padding: 0 20px;
+  height: 56px; padding: 0 max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left));
   display: grid; grid-template-columns: 1fr minmax(0, 520px) 1fr; align-items: center; gap: 16px;
 }
 .brand {
@@ -218,12 +225,12 @@ a { color: inherit; text-decoration: none; }
 .focus-pill .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); font-weight: 500; }
 
 /* ===================== Views ===================== */
-main { max-width: var(--page); margin: 0 auto; padding: 0 20px 96px; }
+main { max-width: var(--page); margin: 0 auto; padding: 0 max(20px, env(safe-area-inset-right)) calc(96px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); }
 .view[hidden] { display: none; }
 
 /* ---------- Home ---------- */
 #home {
-  min-height: calc(100vh - 56px);
+  min-height: calc(100vh - 56px); min-height: calc(100dvh - 56px);
   display: flex; flex-direction: column; justify-content: center;
   padding: 8vh 0 14vh;
 }
@@ -428,6 +435,33 @@ body.text-only .result { padding: 12px 10px; }
 /* ---------- CleanTube player controls ---------- */
 .player-frame:fullscreen { width: 100vw; height: 100vh; aspect-ratio: auto; border-radius: 0; }
 .player-frame:-webkit-full-screen { width: 100vw; height: 100vh; aspect-ratio: auto; border-radius: 0; }
+
+/* Full screen for phones whose browsers can't put a page element in real full screen
+   (iPhone). The player covers the whole page, kept clear of the notch and home bar. */
+html.immersive-on { overflow: hidden; }
+.player-frame.immersive {
+  position: fixed; z-index: 200; aspect-ratio: auto; border-radius: 0;
+  top: env(safe-area-inset-top); bottom: 0;
+  left: env(safe-area-inset-left); right: env(safe-area-inset-right);
+  box-shadow: 0 0 0 100vmax #000;
+}
+.player-frame.immersive .hud {
+  left: 16px; right: 16px; bottom: max(12px, env(safe-area-inset-bottom));
+  max-width: 980px; margin: 0 auto;
+}
+/* Phone held upright: turn a widescreen video on its side so it fills the screen. */
+@media (orientation: portrait) {
+  .player-frame.immersive.turn {
+    --w: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    top: calc(env(safe-area-inset-top) + var(--w) / 2); left: 50%; right: auto; bottom: auto;
+    width: var(--w); height: 100vw;
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+  @supports (height: 100dvh) {
+    .player-frame.immersive.turn { --w: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+  }
+  .player-frame.immersive.turn .hud { bottom: 12px; }
+}
 .player-shield { position: absolute; inset: 0; z-index: 2; display: none; }
 .player-frame.custom .player-shield { display: block; }
 .player-frame.custom.passthrough .player-shield { display: none; }
@@ -576,7 +610,7 @@ body.text-only .result { padding: 12px 10px; }
 #watch.docked .notes { display: none; }
 #watch.docked .watch-grid { display: block; }
 #watch.docked .player-card {
-  position: fixed; right: 20px; bottom: 20px; z-index: 60;
+  position: fixed; right: max(20px, env(safe-area-inset-right)); bottom: max(20px, env(safe-area-inset-bottom)); z-index: 60;
   width: min(380px, calc(100vw - 32px));
   background: var(--glass-strong);
   -webkit-backdrop-filter: saturate(180%) blur(24px);
@@ -604,7 +638,7 @@ dialog[open] { animation: rise 0.4s var(--ease); }
 @keyframes rise { from { transform: translateY(24px); opacity: 0; } }
 
 .side-sheet {
-  margin: 12px 12px 12px auto; height: calc(100vh - 24px); max-height: none;
+  margin: 12px 12px 12px auto; height: calc(100vh - 24px); height: calc(100dvh - 24px); max-height: none;
   width: min(440px, calc(100vw - 24px));
   border-radius: 24px;
 }
@@ -718,7 +752,7 @@ dialog[open] { animation: rise 0.4s var(--ease); }
 
 /* ===================== Toast ===================== */
 .toast {
-  position: fixed; left: 50%; bottom: 28px; z-index: 100;
+  position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom)); z-index: 100;
   transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
   padding: 10px 18px; border-radius: 999px;
   background: var(--glass-strong); color: var(--ink);
@@ -735,10 +769,10 @@ dialog[open] { animation: rise 0.4s var(--ease); }
   .notes { position: static; max-height: none; }
 }
 @media (max-width: 720px) {
-  .toolbar-inner { grid-template-columns: auto 1fr auto; padding: 0 12px; gap: 8px; }
+  .toolbar-inner { grid-template-columns: auto 1fr auto; padding: 0 max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left)); gap: 8px; }
   .brand-name { display: none; }
   .focus-pill .label { display: none; }
-  main { padding: 0 16px 96px; }
+  main { padding: 0 max(16px, env(safe-area-inset-right)) calc(96px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
   .result { grid-template-columns: 136px minmax(0, 1fr) auto; column-gap: 12px; }
   .result.channel-row { grid-template-columns: 56px minmax(0, 1fr); }
   .channel-row .avatar { width: 56px; height: 56px; }
@@ -755,7 +789,7 @@ dialog[open] { animation: rise 0.4s var(--ease); }
   .hero-field .icon { left: 18px; }
   .hero-field .btn { display: none; }
   .watch-title { font-size: 20px; }
-  #watch.docked .player-card { right: 16px; bottom: 16px; }
+  #watch.docked .player-card { right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); }
 }
 @media (max-width: 720px) {
   .results-head { padding: 20px 0 14px; }
@@ -768,6 +802,13 @@ dialog[open] { animation: rise 0.4s var(--ease); }
   .result:not(.channel-row) { grid-template-columns: 120px minmax(0, 1fr) auto; }
   .results-head h1 { font-size: 24px; }
 }
+
+/* Touch screens: stop iOS zooming in on small text fields, and show buttons that otherwise need hover. */
+@media (pointer: coarse) {
+  .toolbar-search input, .composer textarea, dialog input:not([type="range"]):not([type="checkbox"]), dialog select { font-size: 16px; }
+  .hud-btn { width: 40px; height: 40px; }
+}
+@media (hover: none) { .note .icon-btn { opacity: 1; } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
@@ -2129,6 +2170,8 @@ async function openVideo(id) {
   ytPlayer.src = buildEmbedUrl(id);
   renderWatch();
   showHud();
+  if (immersive.on) setImmersive(true, immersive.auto); // re-check which way the new video faces
+  else syncRotation();
   addHistory(id);
   if (!videoCache.get(id)?.durationKnown) {
     await fetchDetails([id]);
@@ -2178,17 +2221,19 @@ function syncSaveBtn() {
 
 function dock() {
   if (!player.active) return;
+  if (immersive.on) setImmersive(false);
   player.docked = true;
   renderPlayerState();
 }
 function undock() {
   player.docked = false;
   renderPlayerState();
+  syncRotation();
 }
 
 function closeVideo() {
   if (pipWindow) { closingPip = true; pipWindow.close(); }
-  if (fsElement()) toggleFullscreen();
+  if (isFull()) toggleFullscreen();
   Object.assign(player, { id: '', list: '', active: false, docked: false, inPip: false, error: false, playing: false });
   ytPlayer.src = 'about:blank';
   renderPlayerState();
@@ -2219,6 +2264,28 @@ const shield = $('player-shield');
 const hud = { timer: 0, hover: false, scrubbing: false, volDrag: false, keyboard: false, pointer: 'mouse', raf: false };
 const svgIcon = id => `<svg class="icon"><use href="#${id}"/></svg>`;
 const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement;
+const canNativeFs = !!(playerFrame.requestFullscreen || playerFrame.webkitRequestFullscreen);
+// "Immersive" is CleanTube's own full screen, for browsers (iPhone) that have no real one for
+// page elements, and for turning the phone sideways, where real full screen needs a tap.
+const immersive = { on: false, auto: false };
+const phoneLandscape = window.matchMedia('(orientation: landscape) and (max-height: 540px) and (pointer: coarse)');
+const isFull = () => !!fsElement() || immersive.on;
+function setImmersive(on, auto = false) {
+  if (on && (!player.active || player.docked || player.inPip)) return;
+  immersive.on = on; immersive.auto = on && auto;
+  const wide = (videoCache.get(player.id)?.aspect || 16 / 9) >= 1;
+  playerFrame.classList.toggle('immersive', on);
+  playerFrame.classList.toggle('turn', on && wide);
+  document.documentElement.classList.toggle('immersive-on', on);
+  syncHud(); layoutPlayer(); showHud();
+}
+// Turning a phone sideways while watching fills the screen; turning it back restores the page.
+function syncRotation() {
+  if (phoneLandscape.matches) {
+    if (!isFull() && route.name === 'watch' && useCustom()) setImmersive(true, true);
+  } else if (immersive.on && immersive.auto) setImmersive(false);
+}
+phoneLandscape.addEventListener?.('change', syncRotation);
 function useCustom() { return store.settings.controls !== 'youtube'; }
 
 function duration() { return player.duration || videoCache.get(player.id)?.duration || 0; }
@@ -2261,6 +2328,7 @@ function layoutPlayer() {
   const custom = useCustom() && player.active && !player.inPip && !player.error;
   playerFrame.classList.toggle('custom', custom);
   if (!custom) playerFrame.classList.remove('hud-on', 'passthrough');
+  if (!custom && immersive.on) { setImmersive(false); return; } // no controls to leave it with
   const st = ytPlayer.style;
   if (!hideYouTubeChrome()) {
     st.left = st.top = st.width = st.height = st.clipPath = st.webkitClipPath = '';
@@ -2331,7 +2399,7 @@ function syncHud() {
   if (!hud.volDrag) $('hud-vol').value = player.muted ? 0 : player.volume;
   $('hud-cc').setAttribute('aria-pressed', store.settings.captions);
   $('hud-rate').textContent = `${player.rate}×`;
-  const fs = !!fsElement();
+  const fs = isFull();
   $('hud-full').innerHTML = svgIcon(fs ? 'i-unfull' : 'i-full');
   $('hud-full').setAttribute('aria-label', fs ? 'Exit full screen' : 'Full screen');
   $('hud-pip').hidden = !supportsDocPiP;
@@ -2404,8 +2472,10 @@ function cycleRate() {
   showHud();
 }
 function toggleFullscreen() {
-  if (fsElement()) (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
-  else (playerFrame.requestFullscreen || playerFrame.webkitRequestFullscreen)?.call(playerFrame);
+  if (immersive.on) setImmersive(false);
+  else if (fsElement()) (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
+  else if (canNativeFs) (playerFrame.requestFullscreen || playerFrame.webkitRequestFullscreen).call(playerFrame);
+  else setImmersive(true);
 }
 
 // Covers YouTube's end screen of suggested videos.
@@ -2491,7 +2561,6 @@ $('hud-vol').addEventListener('input', () => {
 $('hud-vol').addEventListener('change', () => { hud.volDrag = false; if (!hud.keyboard) $('hud-vol').blur(); });
 
 ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => { syncHud(); layoutPlayer(); showHud(); }));
-if (!(playerFrame.requestFullscreen || playerFrame.webkitRequestFullscreen)) $('hud-full').hidden = true;
 
 // Holding Option lets clicks reach YouTube's own player, for things like an ad's Skip button.
 function setPassthrough(on) {
@@ -3029,6 +3098,7 @@ document.addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   if (k === '/') { e.preventDefault(); focusSearch(); }
   else if (k === 'l') { renderLibrary(); $('library').showModal(); }
+  else if (k === 'escape' && immersive.on) setImmersive(false);
   else if (k === 'escape' && route.name !== 'home') goBack();
   else if (route.name === 'watch' && k === 'n') { e.preventDefault(); $('note-input').focus(); }
   else if (route.name === 'watch' && k === 's') { e.preventDefault(); openSavePop(player.id, $('save-btn')); }
