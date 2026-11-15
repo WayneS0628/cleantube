@@ -24,3 +24,6 @@ CleanTube is hosted publicly via GitHub Pages, so there is nothing to download o
 1. **Visit the site:** Go to [https://waynesimmonsjr.com/cleantube/](https://waynesimmonsjr.com/cleantube/).
 2. **Search with intention:** Type what you are looking for into the search bar and hit enter. 
 3. **Pro-tip:** For the best distraction-free workflow, bookmark the URL or set it as your browser's default homepage/new tab page so you always start with a clean slate.
+
+### On your phone
+Open the site in Safari, tap **Share → Add to Home Screen**, and CleanTube opens like an app, without the browser bars. The full-screen button fills the screen (turning a widescreen video sideways if you hold the phone upright), and turning the phone sideways while watching does the same automatically.
